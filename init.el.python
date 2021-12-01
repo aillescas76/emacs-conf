@@ -1,0 +1,339 @@
+;;; package --- This is the init file for emacs.
+;;; Commentary:
+(require 'iso-transl)
+(require 'package)
+;;; Code:
+
+;;(if (fboundp 'gnutls-available-p)
+;;    (fmakunbound 'gnutls-available-p))
+(defvar tls-program)
+(defvar imap-ssl-program)
+(defvar smtpmail-stream-type)
+(defvar starttls-extra-arguments)
+(setq tls-program '("gnutls-cli --tofu -p %p %h")
+      imap-ssl-program '("gnutls-cli --tofu -p %p %s")
+      smtpmail-stream-type 'starttls
+      starttls-extra-arguments '("--tofu")
+      )
+
+;; list the packages you want
+(defvar package-list '(better-defaults elpy yasnippet pyvenv idomenu highlight-indentation find-file-in-project company find-file-in-project flycheck-color-mode-line dash flycheck pkg-info epl dash highlight-indentation jedi auto-complete popup epc ctable concurrent deferred less-css-mode multi-term pkg-info epl popup py-isort python-docstring pyvenv sphinx-doc s undo-tree js2-mode python-mode web-mode etags-select))
+
+
+(package-initialize)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+
+;;(let* ((no-ssl (and (memq system-type '(windows-nt ms-dos))
+;;                    (not (gnutls-available-p))))
+;;       (url (concat (if no-ssl "http" "https") "://melpa.org/packages/")))
+;;  (add-to-list 'package-archives (cons "melpa" url) t))
+;;(when (< emacs-major-version 24)
+  ;; For important compatibility libraries like cl-lib
+;;  (add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/")))
+;;                         ("marmalade" . "http://marmalade-repo.org/packages/")))
+;;(package-initialize)
+
+
+; fetch the list of packages available
+(unless package-archive-contents
+  (package-refresh-contents))
+
+; install the missing packages
+(dolist (package package-list)
+  (unless (package-installed-p package)
+    (package-install package)))
+
+(require 'better-defaults)
+(require 'py-isort)
+(setq frame-title-format
+          '("%f " (dired-directory dired-directory " %b")))
+
+
+;; python-mode
+(defvar py-install-directory "~/.emacs.d/python-mode")
+(add-to-list 'load-path py-install-directory)
+
+(require 'python-mode)
+;(require 'multiple-cursors)
+(require 'etags-select)
+
+(elpy-enable)
+(defvar elpy-rpc-backend "jedi")
+;(add-hook 'python-mode-hook 'jedi:setup)
+(add-to-list 'load-path "~/.emacs.d/init")
+(add-to-list 'load-path "~/.emacs.d/el-get/el-get")
+
+
+;; web-mode
+(add-to-list 'load-path "~/.emacs.d/lisp")
+(require 'web-mode)
+(add-to-list 'auto-mode-alist '("\\.phtml\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.tpl\\.php\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.[agj]sp\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.as[cp]x\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.mustache\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.djhtml\\'" . web-mode))
+;; html
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+(setq web-mode-enable-current-column-highlight t)
+(setq web-mode-engines-alist
+      '(("django"    . "\\.html\\'"))
+)
+
+(projectile-mode)
+
+(defun my-web-mode-hook ()
+  "Hooks for Web mode."
+  (setq web-mode-markup-indent-offset 2)
+)
+(add-hook 'web-mode-hook  'my-web-mode-hook)
+;; (unless (require 'el-get nil 'noerror)
+;;   (with-current-buffer
+;;       (url-retrieve-synchronously
+;;        "https://raw.github.com/dimitri/el-get/master/el-get-install.el")
+;;     (goto-char (point-max))
+;;     (eval-print-last-sexp)))
+
+;; (add-to-list 'el-get-recipe-path "~/.emacs.d/el-get-user/recipes")
+;; (el-get 'sync); If there is more than one, they won't work right.
+
+(defun find-tag-no-prompt ()
+  "Jump to the tag at point without prompting."
+  (interactive)
+  (find-tag (find-tag-default)))
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(bmkp-last-as-first-bookmark-file "~/.emacs.d/bookmarks")
+ '(column-number-mode t)
+ '(custom-enabled-themes '(wombat))
+ '(edts-man-root "/home/aic/.emacs.d/edts/doc/24.0")
+ '(elpy-modules
+   '(elpy-module-company elpy-module-eldoc elpy-module-pyvenv elpy-module-yasnippet elpy-module-sane-defaults))
+ '(inhibit-startup-screen t)
+ '(menu-bar-mode nil)
+ '(package-selected-packages
+   '(edts which-key helm-lsp lsp-origami company-lsp erlang restclient use-package pt markdown-mode gnu-elpa-keyring-update elm-mode elixir-mode yaml-mode web-mode undo-tree sphinx-doc python-mode python-docstring pyenv-mode py-isort projectile multi-term less-css-mode js2-mode jedi idomenu flycheck-color-mode-line etags-select elpy better-defaults))
+ '(projectile-globally-ignored-files '("TAGS" "migrations"))
+ '(pyvenv-workon "emacs")
+ '(safe-local-variable-values '((encoding . utf-8)))
+ '(show-paren-mode t)
+ '(tool-bar-mode nil))
+;;(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ ;)
+(global-undo-tree-mode)
+
+(setq py-smart-indentation t)
+
+
+(defun find-iname-grep-dired (dir pattern regexp)
+  "Find in DIR for the files that have the requested PATTERN the REGEXP."
+  (interactive
+   "DFind-name (directory): \nsFind-name (filename wildcard): \nsFind-grep (grep regexp): ")
+  (find-dired dir (concat "-iname " (shell-quote-argument pattern) " "
+                          "-type f -exec " grep-program " " find-grep-options " -e "
+                          (shell-quote-argument regexp) " "
+                          (shell-quote-argument "{}") " "
+                          (shell-quote-argument ";"))))
+
+(defun find-python-grep-dired (dir regexp)
+  "Find in DIR the requested REGEXP for all python files."
+  (interactive
+   "DFind-name (directory): \nsFind-grep (grep regexp): ")
+  (find-dired dir (concat " -iname " (shell-quote-argument "*.py") " "
+                          "-type f -exec " grep-program " " find-grep-options " -e "
+                          (shell-quote-argument regexp) " "
+                          (shell-quote-argument "{}") " "
+                          (shell-quote-argument ";"))))
+
+(defun find-html-grep-dired (dir regexp)
+  "Find in DIR the requested REGEXP for all html files."
+  (interactive
+   "DFind-name (directory): \nsFind-grep (grep regexp): ")
+  (find-dired dir (concat "-iname " (shell-quote-argument "*.html") " "
+                          "-type f -exec " grep-program " " find-grep-options " -e "
+                          (shell-quote-argument regexp) " "
+                          (shell-quote-argument "{}") " "
+                          (shell-quote-argument ";"))))
+
+(defun pt-symbol-search ()
+  "Run a pt search with the word under the cursor rooted at the current projectile project root."
+  (interactive)
+  (if (fboundp 'projectile-project-root)
+      (pt-regexp (thing-at-point 'symbol)
+                 (projectile-project-root)
+                 (mapcar (lambda (val) (concat "--ignore=" (shell-quote-argument val)))
+                         (append projectile-globally-ignored-files
+                                 projectile-globally-ignored-directories)))
+    (error "Projectile is not available")))
+
+(defun pt-word-search ()
+  "Run a pt search with the word under the cursor rooted at the current projectile project root."
+  (interactive)
+  (if (fboundp 'projectile-project-root)
+      (pt-regexp (thing-at-point 'symbol)
+                 (projectile-project-root)
+                 (mapcar (lambda (val) (concat "- w --ignore=" (shell-quote-argument val)))
+                         (append projectile-globally-ignored-files
+                                 projectile-globally-ignored-directories)))
+    (error "Projectile is not available")))
+
+; display line numbers to the right of the window
+;(global-linum-mode t)
+; show the current line and column numbers in the stats bar as well
+(line-number-mode t)
+(column-number-mode t)
+; don't blink the cursor
+(blink-cursor-mode nil)
+; turn on mouse wheel support for scrolling
+(require 'mwheel)
+(mouse-wheel-mode t)
+
+
+(require 'ido)
+(ido-mode t)
+
+(setq select-enable-clipboard t)
+(setq scroll-margin 7)
+(setq auto-save-interval 500)
+(setq scroll-step 1
+      scroll-conservatively 10000
+      scroll-preserve-screen-position 1)
+(setq auto-window-vscroll nil)
+
+(global-set-key (kbd "S-<f5>") 'find-iname-grep-dired)
+(define-key python-mode-map (kbd "<f6>") 'py-hide-block-or-clause)
+(define-key python-mode-map (kbd "<f7>") 'py-show-block-or-clause)
+(global-set-key (kbd "C-c f") 'find-python-grep-dired)
+(global-set-key (kbd "C-c h") 'find-html-grep-dired)
+(define-key python-mode-map (kbd "C-c <left>") 'py-shift-block-left)
+(define-key python-mode-map (kbd "C-c <right>") 'py-shift-block-right)
+(global-set-key (kbd "C-c r") 'replace-string)
+(global-set-key (kbd "S-<f11>") 'comment-region)
+(defvar multi-term-buffer-name)
+(defvar multi-term-program)
+(when (require 'multi-term nil t)
+  (global-set-key (kbd "<f12>") 'multi-term)
+  (global-set-key (kbd "<C-next>") 'multi-term-next)
+  (global-set-key (kbd "<C-prior>") 'multi-term-prev)
+  (setq multi-term-buffer-name "term"
+        multi-term-program "/bin/bash"))
+
+;; Don't use TABS for indentations.
+(setq-default indent-tabs-mode nil)
+
+;; Enable auto-revert-mode
+(global-auto-revert-mode)
+
+;; Remove trailing whitespace manually by typing C-t C-w.
+(add-hook 'python-mode-hook
+          (lambda ()
+            (local-set-key (kbd "C-t C-w")
+                           'delete-trailing-whitespace)))
+
+;; Automatically remove trailing whitespace when file is saved.
+(add-hook 'python-mode-hook
+          (define-key python-mode-map (kbd "TAB") 'py-indent-line)
+          (lambda()
+            (add-hook 'local-write-file-hooks
+                      '(lambda()
+                         (save-excursion
+                           (delete-trailing-whitespace))))))
+
+
+(add-hook 'python-mode-hook (lambda ()
+                              (require 'sphinx-doc)
+                              (sphinx-doc-mode t)))
+
+(add-hook 'after-init-hook #'global-flycheck-mode)
+
+(global-set-key (kbd "S-<left>")  'windmove-left)
+(global-set-key (kbd "S-<right>") 'windmove-right)
+(global-set-key (kbd "S-<up>")    'windmove-up)
+(global-set-key (kbd "S-<down>")  'windmove-down)
+(global-set-key (kbd "C-,") 'pt-symbol-search)
+(global-set-key (kbd "C-c w") 'pt-word-search)
+
+
+(defun annotate-pdb ()
+  "Include a visual hint for ipdb statements."
+(interactive)
+(highlight-lines-matching-regexp "import pdb")
+(highlight-lines-matching-regexp "pdb.set_trace()"))
+
+(add-hook 'python-mode-hook 'annotate-pdb)
+
+(defun find-file-upwards (file-to-find)
+  "Recursively search each parent directory starting from `default-directory.
+looking for a file with name FILE-TO-FIND.  Returns the path to it
+or nil if not found."
+  (cl-labels
+      ((find-file-r (path)
+                    (let* ((parent (file-name-directory path))
+                           (possible-file (concat parent file-to-find)))
+                      (cond
+                       ((file-exists-p possible-file) possible-file) ; Found
+                       ;; The parent of ~ is nil and the parent of / is itself.
+                       ;; Thus the terminating condition for not finding the file
+                       ;; accounts for both.
+                       ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
+                       (t (find-file-r (directory-file-name parent))))))) ; Continue
+    (find-file-r default-directory)))
+(let ((my-tags-file (find-file-upwards "TAGS")))
+  (when my-tags-file
+    (message "Loading tags file: %s" my-tags-file)
+    (visit-tags-table my-tags-file)))
+
+
+;; don't prompt when finding a tag
+
+(defvar elpy-mode-map)
+(define-key elpy-mode-map (kbd "C-.") 'elpy-rgrep-symbol)
+(define-key elpy-mode-map (kbd "M-.") 'etags-select-find-tag-at-point)
+
+(defvar term-raw-map)
+(add-hook 'term-mode-hook
+          (lambda ()
+            (define-key term-raw-map (kbd "C-y") 'term-paste)))
+
+(defvar css-indent-offset 2)
+(defvar js-indent-level 2)
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:family "Ubuntu Mono" :foundry "DAMA" :slant normal :weight normal :height 128 :width normal))))
+ '(term-color-blue ((t (:background "dark blue" :foreground "dark olive green")))))
+(provide 'init)
+
+(add-hook 'after-init-hook 'my-after-init-hook)
+(defun my-after-init-hook ()
+  "Start edts for erlang development."
+  (require 'edts-start))
+
+(use-package elixir-mode
+  :ensure t
+  :init
+  (add-hook 'elixir-mode-hook
+            (lambda ()
+              (push '(">=" . ?\u2265) prettify-symbols-alist)
+              (push '("<=" . ?\u2264) prettify-symbols-alist)
+              (push '("!=" . ?\u2260) prettify-symbols-alist)
+              (push '("==" . ?\u2A75) prettify-symbols-alist)
+              (push '("=~" . ?\u2245) prettify-symbols-alist)
+              (push '("<-" . ?\u2190) prettify-symbols-alist)
+              (push '("->" . ?\u2192) prettify-symbols-alist)
+              (push '("<-" . ?\u2190) prettify-symbols-alist)
+              (push '("|>" . ?\u25B7) prettify-symbols-alist))))
+
+;;; init.el ends here
