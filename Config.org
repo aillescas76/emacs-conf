@@ -1,5 +1,11 @@
 #+title Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ./common_init.el
+* Current init.el content
+Copy this to the *.emacs.d/init.el* file:
+#+begin_src
+;; my common emacs settings are here
+(load (expand-file-name "~/emacs-conf/common_init.el"))
+#+end_src
 
 * Startup Performance
 #+begin_src emacs-lisp
