@@ -2,7 +2,7 @@
 #+PROPERTY: header-args:emacs-lisp :tangle ./common_init.el
 * Current init.el content
 Copy this to the *.emacs.d/init.el* file:
-#+begin_src
+#+begin_src  emacs-lisp :tangle no
 ;; my common emacs settings are here
 (load (expand-file-name "~/emacs-conf/common_init.el"))
 #+end_src
@@ -227,7 +227,7 @@ Consult provides a lot of useful completion commands similar to Ivy's Counsel.
   (use-package all-the-icons)
   (use-package minions
     :hook (doom-modeline-mode . minions-mode))
-
+  ;; This package requires the fonts included with all-the-icons Run *M-x all-the-icons-install-fonts*
   (use-package doom-modeline
     :ensure t
     :after eshell
@@ -445,7 +445,7 @@ Polybar config
 #+end_src
 
 Script to initialise polybar in several monitors (used as reference for the next emacs-lisp script)
-#+begin_src shell :tangle ~/.local/bin/polybar_aic.sh
+#+begin_src shell :tangle no
   for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
       MONITOR=$m polybar --reload panel &
   done
@@ -494,6 +494,7 @@ Launch polybar at start:
 * Font configuration
 
 #+begin_src emacs-lisp
+;; install previously with sudo apt intall fonts-firacode fonts-cantarell
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)

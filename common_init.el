@@ -163,7 +163,7 @@ folder, otherwise delete a word"
 (use-package all-the-icons)
 (use-package minions
   :hook (doom-modeline-mode . minions-mode))
-
+;; This package requires the fonts included with all-the-icons Run *M-x all-the-icons-install-fonts*
 (use-package doom-modeline
   :ensure t
   :after eshell
@@ -226,6 +226,7 @@ folder, otherwise delete a word"
 (global-set-key (kbd "s-<up>")    'windmove-up)
 (global-set-key (kbd "s-<down>")  'windmove-down)
 
+;; install previously with sudo apt intall fonts-firacode fonts-cantarell
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil :font "Fira Code Retina" :height 120)
