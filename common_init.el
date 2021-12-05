@@ -79,8 +79,6 @@
       "Transport and Map Symbols"))
   (unicode-fonts-setup))
 
-(split-window-right)
-
 ;; Completion with Vertico
 (defun aic/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
@@ -195,31 +193,6 @@ folder, otherwise delete a word"
   ([remap describe-variable] . helpful-variable)
   ([remap describe-key] . helpful-key)
   ([remap describe-symbol] . helpful-symbol))
-
-(defvar aic/polybar-processes nil
-  "Holds the processes of the running Polybar instance, if any")
-(defun aic/get_monitors ()
-  (split-string (shell-command-to-string "xrandr --query | grep \" connected\" | cut -d\" \" -f1")))
-(defun aic/kill-panel ()
-  (interactive)
-    (ignore-errors
-      (dolist (item aic/polybar-processes)
-        (message "Killing process %s" item)
-        (kill-process item)))
-    (setq aic/polybar-processes nil))
-
-
-(defun aic/start-panel ()
-  (interactive)
-  (aic/kill-panel)
-  (setq aic/polybar-processes (aic/get_monitors))
-  (dolist (item aic/polybar-processes)
-    (while (get-process item)
-      (sleep-for 0 1))
-    (message "Starting polybar %s" item)
-    (start-process-shell-command item nil (format "MONITOR=%s polybar --reload panel" item))))
-
-(aic/start-panel)
 
 (global-set-key (kbd "s-<left>")  'windmove-left)
 (global-set-key (kbd "s-<right>") 'windmove-right)
@@ -485,8 +458,9 @@ folder, otherwise delete a word"
   ;; Set default number of workspaces
   (setq exwm-workspace-number 5)
 
-  ;; When windo "class" updates, use it to set the buffer name
+  ;; When window "class" updates, use it to set the buffer name
   (add-hook 'exwm-update-class-hook #'aic/exwm-update-class)
+  (add-hook 'exwm-init-hook #'aic/start-panel)
   ;; (require 'exwm-systemtray)
   ;; (exwm-systemtray-enable)
   ;; These keys should always pass through to emacs
@@ -549,3 +523,57 @@ folder, otherwise delete a word"
                   (number-sequence 0 9))))
 
   (exwm-enable))
+
+(defvar aic/polybar-processes nil
+  "Holds the processes of the running Polybar instance, if any")
+(defun aic/get_monitors ()
+  (split-string (shell-command-to-string "xrandr --query | grep \" connected\" | cut -d\" \" -f1")))
+(defun aic/kill-panel ()
+  (interactive)
+    (ignore-errors
+      (dolist (item aic/polybar-processes)
+        (message "Killing process %s" item)
+        (kill-process item)))
+    (setq aic/polybar-processes nil))
+
+
+(defun aic/start-panel ()
+  (interactive)
+  (aic/kill-panel)
+  (setq aic/polybar-processes (aic/get_monitors))
+  (dolist (item aic/polybar-processes)
+    (while (get-process item)
+      (sleep-for 0 1))
+    (message "Starting polybar %s" item)
+    (start-process-shell-command item nil (format "MONITOR=%s polybar --reload panel" item))))
+
+(defun aic/distribute_windows ()
+  (setq all_monitors (aic/get_monitors))
+  (print (format "All monitors: %s" all_monitors))
+  (if (cdr all_monitors)
+    (progn
+      (print "Multiple monitors")
+      (setq first 1)
+      (setq monitor_list nil)
+      (dolist (window '(5 4 3 2 1))
+        (if first
+            (progn
+              (push (car (cdr all_monitors)) monitor_list)
+              (push window monitor_list)
+              (setq first nil))
+          (progn
+            (push (car all_monitors) monitor_list)
+            (push window monitor_list)
+            (setq first 1)
+            )
+          )
+        )
+      (require 'exwm-randr)
+      (setq exwm-randr-workspace-monitor-plist nil)
+      (setq exwm-randr-workspace-monitor-plist monitor_list)
+      (print (format "Monitor exit list: %s" exwm-randr-workspace-output-plist))
+      (exwm-randr-enable)
+      )
+    )
+  )
+(aic/distribute_windows)
