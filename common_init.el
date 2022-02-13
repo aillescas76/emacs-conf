@@ -194,10 +194,10 @@ folder, otherwise delete a word"
   ([remap describe-key] . helpful-key)
   ([remap describe-symbol] . helpful-symbol))
 
-(global-set-key (kbd "s-<left>")  'windmove-left)
-(global-set-key (kbd "s-<right>") 'windmove-right)
-(global-set-key (kbd "s-<up>")    'windmove-up)
-(global-set-key (kbd "s-<down>")  'windmove-down)
+(global-set-key (kbd "S-<left>")  'windmove-left)
+(global-set-key (kbd "S-<right>") 'windmove-right)
+(global-set-key (kbd "S-<up>")    'windmove-up)
+(global-set-key (kbd "S-<down>")  'windmove-down)
 
 ;; install previously with sudo apt install fonts-firacode fonts-cantarell
 (set-face-attribute 'default nil :font "Fira Code Retina" :height 120)
