@@ -41,6 +41,9 @@
 (menu-bar-mode -1)                 ; Disable menu bar
 (setq visible-bell t)              ; Set up the visible bell
 
+(global-auto-revert-mode 1)
+(setq global-auto-revert-non-file-buffers t)
+
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; one line at a time
 (setq mouse-wheel-progressive-speed nil) ;; don't accelerate scrolling
 (setq mouse-wheel-follow-mouse 't) ;; scroll window under mouse
@@ -158,7 +161,7 @@ folder, otherwise delete a word"
   :config
   (setq which-key-idle-delay 0.3))
 
-(use-package all-the-icons)
+(use-package nerd-icons)
 (use-package minions
   :hook (doom-modeline-mode . minions-mode))
 ;; This package requires the fonts included with all-the-icons Run *M-x all-the-icons-install-fonts*
@@ -433,6 +436,7 @@ folder, otherwise delete a word"
 
 (use-package undo-tree)
 (global-undo-tree-mode)
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
 
 (use-package lsp-mode
   :ensure t
@@ -440,7 +444,19 @@ folder, otherwise delete a word"
   :hook ((typescript-mode js2-mode web-mode) . lsp)
   :bind (:map lsp-mode-map
          ("TAB" . completion-at-point))
-  :custom (lsp-headerline-breadcrumb-enable nil))
+  :custom
+  (lsp-headerline-breadcrumb-enable nil)
+  (lsp-eldoc-enable-hover nil)
+  (lsp-signature-auto-activate nil)
+  (lsp-completion-enable t)
+ )
+
+(use-package lsp-python-ms
+  :ensure t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-python-ms)
+                          (lsp))))  ; or lsp-deferred
 
 (use-package lsp-ui
   :ensure t
@@ -450,6 +466,22 @@ folder, otherwise delete a word"
   (setq lsp-ui-sideline-show-hover nil)
   (setq lsp-ui-doc-position 'bottom)
   (lsp-ui-doc-show))
+
+(use-package pyvenv
+    :ensure t
+    :defer t
+    :diminish t
+    :config
+    (setq pyvenv-mode-line-indicator '(pyvenv-virtual-env-name ("[venv:" pyvenv-virtual-env-name "] ")))
+(pyvenv-mode t))
+
+(use-package lsp-jedi
+  :after lsp-mode
+  :ensure t)
+
+(use-package flycheck
+  :init
+  (global-flycheck-mode))
 
 (if (file-exists-p "~/emacs-conf/enable-exwm")
   (load (expand-file-name "~/emacs-conf/exwm_init.el"))

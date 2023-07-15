@@ -59,7 +59,12 @@ Copy this to the *.emacs.d/init.el* file:
   (setq visible-bell t)              ; Set up the visible bell
 
 #+end_src
+Revert buffers if the information changes on disk
 
+#+begin_src emacs-lisp
+  (global-auto-revert-mode 1)
+  (setq global-auto-revert-non-file-buffers t) 
+#+end_src
 Improve scrolling.
 
 #+begin_src emacs-lisp
@@ -220,7 +225,7 @@ Consult provides a lot of useful completion commands similar to Ivy's Counsel.
     :config
     (setq which-key-idle-delay 0.3))
 
-  (use-package all-the-icons)
+  (use-package nerd-icons)
   (use-package minions
     :hook (doom-modeline-mode . minions-mode))
   ;; This package requires the fonts included with all-the-icons Run *M-x all-the-icons-install-fonts*
@@ -554,19 +559,33 @@ Undo tree
 #+begin_src emacs-lisp
   (use-package undo-tree)
   (global-undo-tree-mode)
+  (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
 #+end_src
 ** Language Server Support
    #+begin_src emacs-lisp
-(use-package lsp-mode
-  :ensure t
-  :commands lsp
-  :hook ((typescript-mode js2-mode web-mode) . lsp)
-  :bind (:map lsp-mode-map
-         ("TAB" . completion-at-point))
-  :custom (lsp-headerline-breadcrumb-enable nil))
+     (use-package lsp-mode
+       :ensure t
+       :commands lsp
+       :hook ((typescript-mode js2-mode web-mode) . lsp)
+       :bind (:map lsp-mode-map
+              ("TAB" . completion-at-point))
+       :custom
+       (lsp-headerline-breadcrumb-enable nil)
+       (lsp-eldoc-enable-hover nil)
+       (lsp-signature-auto-activate nil)
+       (lsp-completion-enable t)
+      )
    #+end_src
 
-
+** lsp-python-ms
+#+begin_src emacs-lisp
+(use-package lsp-python-ms
+  :ensure t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-python-ms)
+                          (lsp))))  ; or lsp-deferred
+#+end_src
 ** lsp-ui
 
    lsp-ui is a set of UI enhancements built on top of lsp-mode which make Emacs feel even more like an IDE. Check out the screenshots on the lsp-ui homepage (linked at the beginning of this paragraph) to see examples of what it can do.
@@ -580,6 +599,30 @@ Undo tree
        (setq lsp-ui-doc-position 'bottom)
        (lsp-ui-doc-show))
    #+end_src
+** pyvenv
+  #+begin_src emacs-lisp
+    (use-package pyvenv
+      :ensure t
+      :defer t
+      :diminish t
+      :config
+      (setq pyvenv-mode-line-indicator '(pyvenv-virtual-env-name ("[venv:" pyvenv-virtual-env-name "] ")))
+	(pyvenv-mode t))
+
+  #+end_src
+** pyright
+  #+begin_src emacs-lisp
+(use-package lsp-jedi
+  :after lsp-mode
+  :ensure t)
+
+  #+end_src
+** flycheck
+  #+begin_src emacs-lisp
+    (use-package flycheck
+      :init
+      (global-flycheck-mode))
+  #+end_src
 
 * Enable EXWM
 Only if we set the special flag file "enable_exwm"
