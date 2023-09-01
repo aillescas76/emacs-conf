@@ -125,7 +125,10 @@ Don't warn for large files (shows up when launching videos)
     (unicode-fonts-setup))
 
 #+end_src
-
+ *Change window title to something more informative*
+#+begin_src emacs-lisp
+  (setq-default frame-title-format '("%f [" mode-name "]"))
+#+end_src 
 * UI Configuration
 ** Completion with Vertico and marginalia
 
@@ -617,6 +620,8 @@ Undo tree
   :ensure t)
 
   #+end_src
+
+  It needs to install "pip install -U jedi-language-server" in the virtual env.
 ** flycheck
   #+begin_src emacs-lisp
     (use-package flycheck

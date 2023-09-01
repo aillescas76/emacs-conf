@@ -82,6 +82,8 @@
       "Transport and Map Symbols"))
   (unicode-fonts-setup))
 
+(setq-default frame-title-format '("%f [" mode-name "]"))
+
 ;; Completion with Vertico
 (defun aic/minibuffer-backward-kill (arg)
   "When minibuffer is completing a file name delete up to parent
