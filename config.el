@@ -35,7 +35,7 @@
   (setq dashboard-set-file-icons t)
   (setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
   ;;(setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
-  (setq dashboard-startup-banner "~/.config/emacs/images/dtmacs-logo.png")  ;; use custom image as banner
+  (setq dashboard-startup-banner "~/.config/emacs/images/emacs-dash.png")  ;; use custom image as banner
   (setq dashboard-center-content nil) ;; set to 't' for centered content
   (setq dashboard-items '((recents . 5)
                           (agenda . 5 )
@@ -425,6 +425,7 @@
    ivy-rich-path-style 'abbrev)
 )
 
+(use-package pyvenv)
 (defun activate-virtual-env-by-project()
  "Activate the Python Virtual Environment corresponding to the Projectile root."
   (interactive)
@@ -437,6 +438,7 @@
 	;; Form the path to the virtual environment.
 	(let* ((project-name (file-name-nondirectory (directory-file-name root-dir)))
 	       (venv-path (expand-file-name (concat "~/.config/pyvenv/" project-name))))
+	  (message "Checking for virtualenv at %s" venv-path)
 	  ;; Check if the virtual environment exist.
 	  (if (file-exists-p venv-path)
 	      ;; If it exists, activate it.
@@ -449,11 +451,14 @@
 (use-package haskell-mode)
 (use-package lua-mode)
 (use-package php-mode)
+(use-package yasnippet)
+(use-package yasnippet-snippets)
+(yas-reload-all)
 (use-package python
   :config
   (add-hook 'python-mode-hook 'activate-virtual-env-by-project)
   (add-hook 'python-mode-hook 'company-mode)
-  (add-hook 'python-mode-hook #'yas-minor-mode)
+  (add-hook 'python-mode-hook 'yas-minor-mode)
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
   (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
