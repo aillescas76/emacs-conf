@@ -227,15 +227,15 @@
   (dt/leader-keys
     "f" '(:ignore t :wk "Files")    
     "f c" '((lambda () (interactive)
-              (find-file "~/.config/emacs/config.org")) 
+              (find-file "~/emacs-conf/config.org")) 
             :wk "Open emacs config.org")
     "f e" '((lambda () (interactive)
-              (dired "~/.config/emacs/")) 
+              (dired "~/.emacs.d/")) 
             :wk "Open user-emacs-directory in dired")
     "f d" '(find-grep-dired :wk "Search for string in files in DIR")
     "f g" '(counsel-grep-or-swiper :wk "Search for string current file")
     "f i" '((lambda () (interactive)
-              (find-file "~/.config/emacs/init.el")) 
+              (find-file "~/.emacs.d/init.el")) 
             :wk "Open emacs init.el")
     "f j" '(counsel-file-jump :wk "Jump to a file below current directory")
     "f l" '(counsel-locate :wk "Locate a file")
@@ -538,6 +538,7 @@
 (use-package projectile
   :config
   (projectile-mode 1))
+(use-package ag)
 
 (use-package rainbow-delimiters
   :hook ((emacs-lisp-mode . rainbow-delimiters-mode)

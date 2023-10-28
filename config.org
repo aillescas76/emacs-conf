@@ -768,6 +768,7 @@ Org-tempo is not a separate package but a module within org that can be enabled.
 (use-package projectile
   :config
   (projectile-mode 1))
+(use-package ag)
 #+end_src
 
 * RAINBOW DELIMITERS
