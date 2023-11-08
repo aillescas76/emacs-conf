@@ -586,44 +586,45 @@ Adding highlights to TODO and related words.
 Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM, AWK, C, C++, Fortran, Icon, IDL (CORBA), IDLWAVE, Java, Javascript, M4, Makefiles, Metafont, Modula2, Object Pascal, Objective-C, Octave, Pascal, Perl, Pike, PostScript, Prolog, Python, Ruby, Simula, SQL, Tcl, Verilog, and VHDL.  Other languages will require you to install additional modes.
 
 #+begin_src emacs-lisp
-(use-package pyvenv)
-(defun activate-virtual-env-by-project()
- "Activate the Python Virtual Environment corresponding to the Projectile root."
-  (interactive)
-  ;; Ensure the required packages are available.
-  (require 'projectile)
-  (require 'pyvenv)
-  ;; Fetch the root directory using Projectile.
-  (let ((root-dir (projectile-project-root)))
-    (if root-dir
-	;; Form the path to the virtual environment.
-	(let* ((project-name (file-name-nondirectory (directory-file-name root-dir)))
-	       (venv-path (expand-file-name (concat "~/.config/pyvenv/" project-name))))
-	  (message "Checking for virtualenv at %s" venv-path)
-	  ;; Check if the virtual environment exist.
-	  (if (file-exists-p venv-path)
-	      ;; If it exists, activate it.
-	      (pyvenv-activate venv-path)
-	    ;; If it doesn't exist, show a warning.
-	    (message "Warning: No virtual environment found at %s" venv-path)))
-      ;; If there is no root directory, show a warning.
-      (message "Warning: Not in a Projectile project.")))
-)
-(use-package haskell-mode)
-(use-package lua-mode)
-(use-package php-mode)
-(use-package yasnippet)
-(use-package yasnippet-snippets)
-(yas-reload-all)
-(use-package python
-  :config
-  (add-hook 'python-mode-hook 'activate-virtual-env-by-project)
-  (add-hook 'python-mode-hook 'company-mode)
-  (add-hook 'python-mode-hook 'yas-minor-mode)
-  (add-hook 'python-mode-hook 'eglot-ensure)
-  (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
-  (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
-)
+  (use-package pyvenv)
+  (defun activate-virtual-env-by-project()
+   "Activate the Python Virtual Environment corresponding to the Projectile root."
+    (interactive)
+    ;; Ensure the required packages are available.
+    (require 'projectile)
+    (require 'pyvenv)
+    ;; Fetch the root directory using Projectile.
+    (let ((root-dir (projectile-project-root)))
+      (if root-dir
+	  ;; Form the path to the virtual environment.
+	  (let* ((project-name (file-name-nondirectory (directory-file-name root-dir)))
+		 (venv-path (expand-file-name (concat "~/.config/pyvenv/" project-name))))
+	    (message "Checking for virtualenv at %s" venv-path)
+	    ;; Check if the virtual environment exist.
+	    (if (file-exists-p venv-path)
+		;; If it exists, activate it.
+		(pyvenv-activate venv-path)
+	      ;; If it doesn't exist, show a warning.
+	      (message "Warning: No virtual environment found at %s" venv-path)))
+	;; If there is no root directory, show a warning.
+	(message "Warning: Not in a Projectile project.")))
+  )
+  (use-package haskell-mode)
+  (use-package lua-mode)
+  (use-package php-mode)
+  (use-package yasnippet)
+  (use-package yasnippet-snippets
+    :init (yas-reload-all)
+  )
+  (use-package python
+    :config
+    (add-hook 'python-mode-hook 'activate-virtual-env-by-project)
+    (add-hook 'python-mode-hook 'company-mode)
+    (add-hook 'python-mode-hook 'yas-minor-mode)
+    (add-hook 'python-mode-hook 'eglot-ensure)
+    (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
+    (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
+  )
 #+end_src
 
 * MINIBUFFER ESCAPE

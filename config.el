@@ -452,8 +452,9 @@
 (use-package lua-mode)
 (use-package php-mode)
 (use-package yasnippet)
-(use-package yasnippet-snippets)
-(yas-reload-all)
+(use-package yasnippet-snippets
+  :init (yas-reload-all)
+)
 (use-package python
   :config
   (add-hook 'python-mode-hook 'activate-virtual-env-by-project)
