@@ -60,12 +60,12 @@
 
 (use-package peep-dired
   :after dired
-  :hook (evil-normalize-keymaps . peep-dired-hook)
+  ;:hook (evil-normalize-keymaps . peep-dired-hook)
   :config
-    (evil-define-key 'normal dired-mode-map (kbd "h") 'dired-up-directory)
-    (evil-define-key 'normal dired-mode-map (kbd "l") 'dired-open-file) ; use dired-find-file instead if not using dired-open package
-    (evil-define-key 'normal peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
-    (evil-define-key 'normal peep-dired-mode-map (kbd "k") 'peep-dired-prev-file)
+    (define-key dired-mode-map (kbd "h") 'dired-up-directory)
+    (define-key dired-mode-map (kbd "l") 'dired-open-file) ; use dired-find-file instead if not using dired-open package
+    (define-key peep-dired-mode-map (kbd "j") 'peep-dired-next-file)
+    (define-key peep-dired-mode-map (kbd "k") 'peep-dired-prev-file)
 )
 
 (use-package elfeed
@@ -99,34 +99,35 @@
   (setq elfeed-goodies/entry-pane-size 0.5))
 
 ;; Expands to: (elpaca evil (use-package evil :demand t))
-(use-package evil
-    :init      ;; tweak evil's configuration before loading it
-    (setq evil-want-integration t  ;; This is optional since it's already set to t by default.
-          evil-want-keybinding nil
-          evil-vsplit-window-right t
-          evil-split-window-below t
-          evil-undo-system 'undo-redo)  ;; Adds vim-like C-r redo functionality
-    (evil-mode))
+;(use-package evil
+    ;; :init      ;; tweak evil's configuration before loading it
+    ;; (setq evil-want-integration t  ;; This is optional since it's already set to t by default.
+    ;;       evil-want-keybinding nil
+    ;;       evil-vsplit-window-right t
+    ;;       evil-split-window-below t
+    ;;       evil-undo-system 'undo-redo)  ;; Adds vim-like C-r redo functionality
+    ;; (evil-mode))
 
-(use-package evil-collection
-  :after evil
-  :config
-  ;; Do not uncomment this unless you want to specify each and every mode
-  ;; that evil-collection should works with.  The following line is here 
-  ;; for documentation purposes in case you need it.  
-  ;; (setq evil-collection-mode-list '(calendar dashboard dired ediff info magit ibuffer))
-  (add-to-list 'evil-collection-mode-list 'help) ;; evilify help mode
-  (evil-collection-init))
+;; (use-package evil-collection
+;;   :after evil
+;;   :config
+;;   ;; Do not uncomment this unless you want to specify each and every mode
+;;   ;; that evil-collection should works with.  The following line is here 
+;;   ;; for documentation purposes in case you need it.  
+;;   ;; (setq evil-collection-mode-list '(calendar dashboard dired ediff info magit ibuffer))
+;;   (add-to-list 'evil-collection-mode-list 'help) ;; evilify help mode
+;;   (evil-collection-init))
 
-(use-package evil-tutor)
+;; (use-package evil-tutor)
 
-;; Using RETURN to follow links in Org/Evil 
-;; Unmap keys in 'evil-maps if not done, (setq org-return-follows-link t) will not work
-(with-eval-after-load 'evil-maps
-  (define-key evil-motion-state-map (kbd "SPC") nil)
-  (define-key evil-motion-state-map (kbd "RET") nil)
-  (define-key evil-motion-state-map (kbd "TAB") nil))
-;; Setting RETURN key in org-mode to follow links
+;; ;; Using RETURN to follow links in Org/Evil 
+;; ;; Unmap keys in 'evil-maps if not done, (setq org-return-follows-link t) will not work
+;; (with-eval-after-load 'evil-maps
+;;   (define-key evil-motion-state-map (kbd "SPC") nil)
+;;   (define-key evil-motion-state-map (kbd "RET") nil)
+;;   (define-key evil-motion-state-map (kbd "TAB") nil))
+;; ;
+					; Setting RETURN key in org-mode to follow links
   (setq org-return-follows-link  t)
 
 (use-package flycheck
@@ -170,14 +171,14 @@
 
 (use-package general
   :config
-  (general-evil-setup)
+  ;; (general-evil-setup)
   
   ;; set up 'SPC' as the global leader key
   (general-create-definer dt/leader-keys
-    :states '(normal insert visual emacs)
+    ;:states '(normal insert visual emacs)
     :keymaps 'override
-    :prefix "SPC" ;; set leader
-    :global-prefix "M-SPC") ;; access leader in insert mode
+    :prefix "M-v" ;; set leader
+    ) ;; access leader in insert mode
 
   (dt/leader-keys
     "SPC" '(counsel-M-x :wk "Counsel M-x")
@@ -266,7 +267,7 @@
     "g t" '(git-timemachine :wk "Git time machine")
     "g u" '(magit-stage-file :wk "Git unstage file"))
 
- (dt/leader-keys
+  (dt/leader-keys
     "h" '(:ignore t :wk "Help")
     "h a" '(counsel-apropos :wk "Apropos")
     "h b" '(describe-bindings :wk "Describe bindings")
@@ -350,30 +351,31 @@
 
   (dt/leader-keys
     "w" '(:ignore t :wk "Windows")
-    ;; Window splits
-    "w c" '(evil-window-delete :wk "Close window")
-    "w n" '(evil-window-new :wk "New window")
-    "w s" '(evil-window-split :wk "Horizontal split window")
-    "w v" '(evil-window-vsplit :wk "Vertical split window")
-    ;; Window motions
-    "w h" '(evil-window-left :wk "Window left")
-    "w j" '(evil-window-down :wk "Window down")
-    "w k" '(evil-window-up :wk "Window up")
-    "w l" '(evil-window-right :wk "Window right")
-    "w w" ' (evil-window-next :wk "Goto next window")
-    "<left>" '(evil-window-left :wk "Window left")
-    "<right>" '(evil-window-right :wk "Window right")
-    "<up>" '(evil-window-up :wk "Window up")
-    "<down>" '(evil-window-down :wk "Window down"))
+    ; Window splits
+    ; "w c" '(evil-window-delete :wk "Close window")
+    ; "w n" '(evil-window-new :wk "New window")
+    ; "w s" '(evil-window-split :wk "Horizontal split window")
+    ; "w v" '(evil-window-vsplit :wk "Vertical split window")
+    ; ;; Window motions
+    ; "w h" '(evil-window-left :wk "Window left")
+    ; "w j" '(evil-window-down :wk "Window down")
+    ; "w k" '(evil-window-up :wk "Window up")
+    ; "w l" '(evil-window-right :wk "Window right")
+    ; "w w" ' (evil-window-next :wk "Goto next window")
+    "<left>" '(window-left :wk "Window left")
+    "<right>" '(window-right :wk "Window right")
+    "<up>" '(window-up :wk "Window up")
+    "<down>" '(window-down :wk "Window down")
+    )
 
-)
+  )
 
 (use-package git-timemachine
   :after git-timemachine
-  :hook (evil-normalize-keymaps . git-timemachine-hook)
+  ;:hook (evil-normalize-keymaps . git-timemachine-hook)
   :config
-    (evil-define-key 'normal git-timemachine-mode-map (kbd "C-j") 'git-timemachine-show-previous-revision)
-    (evil-define-key 'normal git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
+    (define-key git-timemachine-mode-map (kbd "C-j") 'git-timemachine-show-previous-revision)
+    (define-key git-timemachine-mode-map (kbd "C-k") 'git-timemachine-show-next-revision)
 )
 
 (use-package magit)
@@ -465,7 +467,7 @@
   (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
 )
 
-(global-set-key [escape] 'keyboard-escape-quit)
+;; (global-set-key [escape] 'keyboard-escape-quit)
 
 (use-package doom-modeline
   :ensure t
@@ -601,7 +603,7 @@
   :config
   ;; When running programs in Vterm and in 'normal' mode, make sure that ESC
   ;; kills the program as it would in most standard terminal programs.
-  (evil-define-key 'normal vterm-mode-map (kbd "<escape>") 'vterm--self-insert)
+  (define-key 'normal vterm-mode-map (kbd "<escape>") 'vterm--self-insert)
   (setq vterm-toggle-fullscreen-p nil)
   (setq vterm-toggle-scope 'project)
   (add-to-list 'display-buffer-alist
