@@ -603,7 +603,7 @@
   :config
   ;; When running programs in Vterm and in 'normal' mode, make sure that ESC
   ;; kills the program as it would in most standard terminal programs.
-  (define-key 'normal vterm-mode-map (kbd "<escape>") 'vterm--self-insert)
+  ;; (define-key 'normal vterm-mode-map (kbd "<escape>") 'vterm--self-insert)
   (setq vterm-toggle-fullscreen-p nil)
   (setq vterm-toggle-scope 'project)
   (add-to-list 'display-buffer-alist
