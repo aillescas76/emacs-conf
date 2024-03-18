@@ -51,6 +51,7 @@
 - [[#tldr][TLDR]]
 - [[#transparency][TRANSPARENCY]]
 - [[#which-key][WHICH-KEY]]
+- [[#undo-tree][UNDO TREE]]
 
 * IMPORTANT PROGRAMS TO LOAD FIRST
 To keep this =config.org= a reasonable length, I have moved a lot of code to individual scripts that will be sourced by this config.  These scripts are found in "~/.config/emacs/scripts" and do not contain any code that most people are likely to need to edit.
@@ -949,3 +950,11 @@ With Emacs version 29, true transparency has been added.  I have turned transpar
 	  which-key-separator " → " ))
 #+end_src
 
+* UNDO TREE
+#+begin_src emacs-lisp
+(use-package undo-tree
+  :init
+    (global-undo-tree-mode)
+)
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
+#+end_src

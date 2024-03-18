@@ -657,3 +657,9 @@
 	  which-key-max-description-length 25
 	  which-key-allow-imprecise-window-fit nil
 	  which-key-separator " → " ))
+
+(use-package undo-tree
+  :init
+    (global-undo-tree-mode)
+)
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
