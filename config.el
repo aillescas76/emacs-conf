@@ -453,6 +453,13 @@
 (use-package haskell-mode)
 (use-package lua-mode)
 (use-package php-mode)
+;; (add-to-list 'eglot-server-programs '(elixir-mode "~/.emacs.d/elixir-ls/release/language_server.sh"))
+(use-package elixir-mode
+  :config
+  (add-hook 'elixir-mode-hook 'eglot-ensure)
+  (add-hook 'elixir-mode-hook (lambda () (setq eglot-connect-timeout 120)))
+  (add-hook 'elixir-mode-hook (lambda () (setq eglot-autoshutdown t)))
+)
 (use-package yasnippet)
 (use-package yasnippet-snippets
   :init (yas-reload-all)
