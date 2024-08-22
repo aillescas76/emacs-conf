@@ -332,6 +332,9 @@
     "p" '(projectile-command-map :wk "Projectile"))
 
   (dt/leader-keys
+    "r" '(replace-string :wk "Replace string"))
+
+  (dt/leader-keys
     "s" '(:ignore t :wk "Search")
     "s d" '(dictionary-search :wk "Search dictionary")
     "s m" '(man :wk "Man pages")
@@ -362,10 +365,10 @@
     ; "w k" '(evil-window-up :wk "Window up")
     ; "w l" '(evil-window-right :wk "Window right")
     ; "w w" ' (evil-window-next :wk "Goto next window")
-    "<left>" '(window-left :wk "Window left")
-    "<right>" '(window-right :wk "Window right")
-    "<up>" '(window-up :wk "Window up")
-    "<down>" '(window-down :wk "Window down")
+    "<left>" '(windmove-left :wk "Window left")
+    "<right>" '(windmove-right :wk "Window right")
+    "<up>" '(windmove-up :wk "Window up")
+    "<down>" '(windmove-down :wk "Window down")
     )
 
   )
@@ -453,7 +456,6 @@
 (use-package haskell-mode)
 (use-package lua-mode)
 (use-package php-mode)
-;; (add-to-list 'eglot-server-programs '(elixir-mode "~/.emacs.d/elixir-ls/release/language_server.sh"))
 (use-package elixir-mode
   :config
   (add-hook 'elixir-mode-hook 'eglot-ensure)
