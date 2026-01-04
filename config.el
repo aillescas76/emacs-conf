@@ -1,41 +1,72 @@
-(add-to-list 'load-path "~/.config/emacs/scripts/")
+(add-to-list 'load-path (expand-file-name "scripts" user-emacs-directory))
 
-(require 'elpaca-setup)  ;; The Elpaca Package Manager
+(require 'app-launchers)
+(require 'buffer-move)
 
-(use-package all-the-icons
-  :ensure t
+(require 'package)
+(add-to-list 'package-archives '("gnu" . "https://elpa.gnu.org/packages/") t)
+(add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+;; Refresh once if the archive metadata is empty or stale.
+(unless package-archive-contents
+  (package-refresh-contents))
+
+;; Built-in since Emacs 29.
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+(defun aic/display-startup-time ()
+  (message "Emacs loaded in %s with %d garbage collections."
+           (format "%.2f seconds"
+                   (float-time
+                    (time-subtract after-init-time before-init-time)))
+           gcs-done))
+
+(add-hook 'emacs-startup-hook #'aic/display-startup-time)
+
+(use-package nerd-icons
   :if (display-graphic-p))
 
-(use-package all-the-icons-dired
-  :hook (dired-mode . (lambda () (all-the-icons-dired-mode t))))
+(use-package nerd-icons-dired
+  :hook (dired-mode . nerd-icons-dired-mode))
+
+(use-package nerd-icons-completion
+  :after marginalia
+  :config
+  (nerd-icons-completion-mode)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 (setq backup-directory-alist '((".*" . "~/.local/share/Trash/files")))
 
-(use-package company
-  :defer 2
-  :diminish
+(use-package corfu
   :custom
-  (company-begin-commands '(self-insert-command))
-  (company-idle-delay .1)
-  (company-minimum-prefix-length 2)
-  (company-show-numbers t)
-  (company-tooltip-align-annotations 't)
-  (global-company-mode t))
+  (corfu-auto t)
+  (corfu-cycle t)
+  (corfu-preselect 'prompt)
+  :bind
+  (:map corfu-map
+        ("TAB" . corfu-next)
+        ([tab] . corfu-next)
+        ("S-TAB" . corfu-previous)
+        ([backtab] . corfu-previous))
+  :init
+  (global-corfu-mode))
 
-(use-package company-box
-  :after company
-  :diminish
-  :hook (company-mode . company-box-mode))
+(use-package cape
+  :init
+  (add-to-list 'completion-at-point-functions #'cape-file)
+  (add-to-list 'completion-at-point-functions #'cape-dabbrev))
 
 (use-package dashboard
-  :ensure t 
   :init
   (setq initial-buffer-choice 'dashboard-open)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-file-icons t)
+  (setq dashboard-icon-type 'nerd-icons)
   (setq dashboard-banner-logo-title "Emacs Is More Than A Text Editor!")
   ;;(setq dashboard-startup-banner 'logo) ;; use standard emacs logo as banner
-  (setq dashboard-startup-banner "~/.config/emacs/images/emacs-dash.png")  ;; use custom image as banner
+  (setq dashboard-startup-banner (expand-file-name "images/emacs-dash.png" user-emacs-directory))  ;; use custom image as banner
   (setq dashboard-center-content nil) ;; set to 't' for centered content
   (setq dashboard-items '((recents . 5)
                           (agenda . 5 )
@@ -130,24 +161,37 @@
 					; Setting RETURN key in org-mode to follow links
   (setq org-return-follows-link  t)
 
-(use-package flycheck
-  :ensure t
-  :defer t
-  :diminish
-  :init (global-flycheck-mode))
+(use-package flymake
+  :ensure nil
+  :hook (prog-mode . flymake-mode)
+  :custom
+  (flymake-no-changes-timeout 0.3))
 
-(set-face-attribute 'default nil
-  :font "Fira Code Retina"
-  :height 110
-  :weight 'medium)
-(set-face-attribute 'variable-pitch nil
-  :font "Ubuntu"
-  :height 120
-  :weight 'medium)
-(set-face-attribute 'fixed-pitch nil
-  :font "Fira Code Retina"
-  :height 110
-  :weight 'medium)
+(defun dt/first-available-font (fonts)
+  (catch 'font
+    (dolist (font fonts)
+      (when (find-font (font-spec :name font))
+        (throw 'font font)))
+    nil))
+
+(let* ((mono (dt/first-available-font '("Fira Code Retina" "Fira Code" "JetBrains Mono"
+                                       "DejaVu Sans Mono" "Monospace")))
+       (var (dt/first-available-font '("Ubuntu" "Cantarell" "Noto Sans" "Sans"))))
+  (when mono
+    (set-face-attribute 'default nil
+      :font mono
+      :height 110
+      :weight 'medium)
+    (set-face-attribute 'fixed-pitch nil
+      :font mono
+      :height 110
+      :weight 'medium)
+    (add-to-list 'default-frame-alist `(font . ,(format "%s-11" mono))))
+  (when var
+    (set-face-attribute 'variable-pitch nil
+      :font var
+      :height 120
+      :weight 'medium)))
 ;; Makes commented text and keywords italics.
 ;; This is working in emacsclient but not emacs.
 ;; Your font must have an italic face available.
@@ -156,11 +200,6 @@
 (set-face-attribute 'font-lock-keyword-face nil
   :slant 'italic)
 
-;; This sets the default font on all graphical frames created after restarting Emacs.
-;; Does the same thing as 'set-face-attribute default' above, but emacsclient fonts
-;; are not right unless I also add this method of setting the default font.
-(add-to-list 'default-frame-alist '(font . "Fira Code Retina-11"))
-
 ;; Uncomment the following line if line spacing needs adjusting.
 (setq-default line-spacing 0.12)
 
@@ -168,6 +207,31 @@
 (global-set-key (kbd "C--") 'text-scale-decrease)
 (global-set-key (kbd "<C-wheel-up>") 'text-scale-increase)
 (global-set-key (kbd "<C-wheel-down>") 'text-scale-decrease)
+
+(require 'cl-lib)
+
+(defun aic/replace-unicode-font-mapping (block-name old-font new-font)
+  (let* ((block-idx (cl-position-if
+                     (lambda (i) (string-equal (car i) block-name))
+                     unicode-fonts-block-font-mapping))
+         (block-fonts (cadr (nth block-idx unicode-fonts-block-font-mapping)))
+         (updated-block (cl-substitute new-font old-font block-fonts :test 'string-equal)))
+    (setf (cdr (nth block-idx unicode-fonts-block-font-mapping))
+          `(,updated-block))))
+
+(use-package unicode-fonts
+  :custom
+  (unicode-fonts-skip-font-groups '(low-quality-glyphs))
+  :config
+  ;; Fix the font mappings to use the right emoji font.
+  (mapcar
+   (lambda (block-name)
+     (aic/replace-unicode-font-mapping block-name "Apple Color Emoji" "Noto Color Emoji"))
+   '("Dingbats"
+     "Emoticons"
+     "Miscellaneous Symbols and Pictographs"
+     "Transport and Map Symbols"))
+  (unicode-fonts-setup))
 
 (use-package general
   :config
@@ -181,7 +245,7 @@
     ) ;; access leader in insert mode
 
   (dt/leader-keys
-    "SPC" '(counsel-M-x :wk "Counsel M-x")
+    "SPC" '(consult-M-x :wk "Consult M-x")
     ;;"." '(find-file :wk "Find file")
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
     "TAB TAB" '(comment-line :wk "Comment lines")
@@ -189,7 +253,7 @@
 
   (dt/leader-keys
     "b" '(:ignore t :wk "Bookmarks/Buffers")
-    "b b" '(switch-to-buffer :wk "Switch to buffer")
+    "b b" '(consult-buffer :wk "Switch to buffer")
     "b c" '(clone-indirect-buffer :wk "Create indirect buffer copy in a split")
     "b C" '(clone-indirect-buffer-other-window :wk "Clone indirect buffer in new window")
     "b d" '(bookmark-delete :wk "Delete bookmark")
@@ -210,7 +274,7 @@
     "d" '(:ignore t :wk "Dired")
     "d d" '(dired :wk "Open dired")
     "d j" '(dired-jump :wk "Dired jump to current")
-    "d n" '(neotree-dir :wk "Open directory in neotree")
+    "d n" '(dirvish-side :wk "Open directory in dirvish")
     "d p" '(peep-dired :wk "Peep-dired"))
 
   (dt/leader-keys
@@ -218,7 +282,7 @@
     "e b" '(eval-buffer :wk "Evaluate elisp in buffer")
     "e d" '(eval-defun :wk "Evaluate defun containing or after point")
     "e e" '(eval-expression :wk "Evaluate and elisp expression")
-    "e h" '(counsel-esh-history :which-key "Eshell history")
+    "e h" '(consult-esh-history :which-key "Eshell history")
     "e l" '(eval-last-sexp :wk "Evaluate elisp expression before point")
     "e r" '(eval-region :wk "Evaluate elisp in region")
     "e R" '(eww-reload :which-key "Reload current page in EWW")
@@ -228,19 +292,19 @@
   (dt/leader-keys
     "f" '(:ignore t :wk "Files")    
     "f c" '((lambda () (interactive)
-              (find-file "~/emacs-conf/config.org")) 
+              (find-file (expand-file-name "config.org" user-emacs-directory))) 
             :wk "Open emacs config.org")
     "f e" '((lambda () (interactive)
-              (dired "~/.emacs.d/")) 
+              (dired user-emacs-directory)) 
             :wk "Open user-emacs-directory in dired")
     "f d" '(find-grep-dired :wk "Search for string in files in DIR")
-    "f g" '(counsel-grep-or-swiper :wk "Search for string current file")
+    "f g" '(consult-line :wk "Search for string current file")
     "f i" '((lambda () (interactive)
-              (find-file "~/.emacs.d/init.el")) 
+              (find-file (expand-file-name "init.el" user-emacs-directory))) 
             :wk "Open emacs init.el")
-    "f j" '(counsel-file-jump :wk "Jump to a file below current directory")
-    "f l" '(counsel-locate :wk "Locate a file")
-    "f r" '(counsel-recentf :wk "Find recent files")
+    "f j" '(consult-find :wk "Jump to a file below current directory")
+    "f l" '(consult-locate :wk "Locate a file")
+    "f r" '(consult-recent-file :wk "Find recent files")
     "f u" '(sudo-edit-find-file :wk "Sudo find file")
     "f U" '(sudo-edit :wk "Sudo edit file"))
 
@@ -269,7 +333,7 @@
 
   (dt/leader-keys
     "h" '(:ignore t :wk "Help")
-    "h a" '(counsel-apropos :wk "Apropos")
+    "h a" '(consult-apropos :wk "Apropos")
     "h b" '(describe-bindings :wk "Describe bindings")
     "h c" '(describe-char :wk "Describe character under cursor")
     "h d" '(:ignore t :wk "Emacs documentation")
@@ -294,8 +358,7 @@
     "h m" '(describe-mode :wk "Describe mode")
     "h r" '(:ignore t :wk "Reload")
     "h r r" '((lambda () (interactive)
-                (load-file "~/.emacs.d/init.el")
-                (ignore (elpaca-process-queues)))
+                (load-file (expand-file-name "config.el" user-emacs-directory)))
               :wk "Reload emacs config")
     "h t" '(load-theme :wk "Load theme")
     "h v" '(describe-variable :wk "Describe variable")
@@ -324,12 +387,13 @@
     "o d" '(dashboard-open :wk "Dashboard")
     "o e" '(elfeed :wk "Elfeed RSS")
     "o f" '(make-frame :wk "Open buffer in new frame")
-    "o F" '(select-frame-by-name :wk "Select frame by name"))
+    "o F" '(select-frame-by-name :wk "Select frame by name")
+    "o r" '(dt/emacs-run-launcher :wk "Run app launcher"))
 
-  ;; projectile-command-map already has a ton of bindings 
+  ;; project-prefix-map already has a ton of bindings 
   ;; set for us, so no need to specify each individually.
   (dt/leader-keys
-    "p" '(projectile-command-map :wk "Projectile"))
+    "p" '(project-prefix-map :wk "Project"))
 
   (dt/leader-keys
     "r" '(replace-string :wk "Replace string"))
@@ -344,13 +408,13 @@
   (dt/leader-keys
     "t" '(:ignore t :wk "Toggle")
     "t e" '(eshell-toggle :wk "Toggle eshell")
-    "t f" '(flycheck-mode :wk "Toggle flycheck")
+    "t f" '(flymake-mode :wk "Toggle flymake")
     "t l" '(display-line-numbers-mode :wk "Toggle line numbers")
-    "t n" '(neotree-toggle :wk "Toggle neotree file viewer")
+    "t n" '(dirvish-side :wk "Toggle dirvish file viewer")
     "t o" '(org-mode :wk "Toggle org mode")
     "t r" '(rainbow-mode :wk "Toggle rainbow mode")
     "t t" '(visual-line-mode :wk "Toggle truncated lines")
-    "t v" '(vterm-toggle :wk "Toggle vterm"))
+    "t v" '(eat :wk "Toggle eat"))
 
   (dt/leader-keys
     "w" '(:ignore t :wk "Windows")
@@ -369,9 +433,18 @@
     "<right>" '(windmove-right :wk "Window right")
     "<up>" '(windmove-up :wk "Window up")
     "<down>" '(windmove-down :wk "Window down")
+    "H" '(buf-move-left :wk "Move buffer left")
+    "J" '(buf-move-down :wk "Move buffer down")
+    "K" '(buf-move-up :wk "Move buffer up")
+    "L" '(buf-move-right :wk "Move buffer right")
     )
 
   )
+
+(global-set-key (kbd "S-<left>") 'windmove-left)
+(global-set-key (kbd "S-<right>") 'windmove-right)
+(global-set-key (kbd "S-<up>") 'windmove-up)
+(global-set-key (kbd "S-<down>") 'windmove-down)
 
 (use-package git-timemachine
   :after git-timemachine
@@ -396,85 +469,149 @@
           ("NOTE"       success bold)
           ("DEPRECATED" font-lock-doc-face bold))))
 
-(use-package counsel
-  :after ivy
-  :diminish
-  :config 
-    (counsel-mode)
-    (setq ivy-initial-inputs-alist nil)) ;; removes starting ^ regex in M-x
+(use-package vertico
+  :init
+  (vertico-mode)
+  :custom
+  (vertico-cycle t))
 
-(use-package ivy
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(use-package orderless
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles partial-completion)))))
+
+(use-package marginalia
+  :after vertico
+  :bind (:map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+  :init
+  (marginalia-mode))
+
+(use-package consult
+  :bind (;; Navigation
+         ("C-s" . consult-line)
+         ("C-M-l" . consult-imenu)
+         ("M-y" . consult-yank-pop)
+         ;; Buffers & Files
+         ("C-x b" . consult-buffer)
+         ("C-x 4 b" . consult-buffer-other-window)
+         ;; Search
+         ("M-s r" . consult-ripgrep)
+         ("M-s g" . consult-grep)
+         ("M-s f" . consult-find)
+         ;; Git
+         ("C-x p g" . consult-git-grep)
+         ;; Diagnostics
+         ("M-g f" . consult-flymake)))
+
+(use-package embark
   :bind
-  ;; ivy-resume resumes the last Ivy-based completion.
-  (("C-c C-r" . ivy-resume)
-   ("C-x B" . ivy-switch-buffer-other-window))
-  :diminish
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings))
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
+
+(use-package embark-consult
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
+
+(setq enable-recursive-minibuffers t)
+
+;; Ensure Emacs can find tools installed via mise/uv.
+(dolist (path '("~/.local/bin"
+                "~/.local/share/mise/bin"
+                "~/.local/share/mise/shims"))
+  (let ((expanded (expand-file-name path)))
+    (when (file-directory-p expanded)
+      (add-to-list 'exec-path expanded)
+      (setenv "PATH" (concat expanded path-separator (getenv "PATH"))))))
+
+(use-package treesit-auto
   :custom
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-count-format "(%d/%d) ")
-  (setq enable-recursive-minibuffers t)
+  (treesit-auto-install 'prompt)
   :config
-  (ivy-mode))
-
-(use-package all-the-icons-ivy-rich
-  :ensure t
-  :init (all-the-icons-ivy-rich-mode 1))
-
-(use-package ivy-rich
-  :after ivy
-  :ensure t
-  :init (ivy-rich-mode 1) ;; this gets us descriptions in M-x.
-  :custom
-  (ivy-virtual-abbreviate 'full
-   ivy-rich-switch-buffer-align-virtual-buffer t
-   ivy-rich-path-style 'abbrev)
-)
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
 
 (use-package pyvenv)
 (defun activate-virtual-env-by-project()
- "Activate the Python Virtual Environment corresponding to the Projectile root."
+ "Activate a project-local virtualenv (prefers .venv) for Python tooling."
   (interactive)
-  ;; Ensure the required packages are available.
-  (require 'projectile)
+  (require 'project)
   (require 'pyvenv)
-  ;; Fetch the root directory using Projectile.
-  (let ((root-dir (projectile-project-root)))
-    (if root-dir
-	;; Form the path to the virtual environment.
-	(let* ((project-name (file-name-nondirectory (directory-file-name root-dir)))
-	       (venv-path (expand-file-name (concat "~/.config/pyvenv/" project-name))))
-	  (message "Checking for virtualenv at %s" venv-path)
-	  ;; Check if the virtual environment exist.
-	  (if (file-exists-p venv-path)
-	      ;; If it exists, activate it.
-	      (pyvenv-activate venv-path)
-	    ;; If it doesn't exist, show a warning.
-	    (message "Warning: No virtual environment found at %s" venv-path)))
-      ;; If there is no root directory, show a warning.
-      (message "Warning: Not in a Projectile project.")))
-)
+  (let ((project (project-current nil)))
+    (if project
+        (let* ((root-dir (project-root project))
+               (venv-path (expand-file-name ".venv" root-dir))
+               (fallback-path
+                (expand-file-name
+                 (concat "~/.config/pyvenv/"
+                         (file-name-nondirectory (directory-file-name root-dir))))))
+          (cond
+           ((file-exists-p venv-path)
+            (pyvenv-activate venv-path))
+           ((file-exists-p fallback-path)
+            (pyvenv-activate fallback-path))
+           (t
+            (message "Warning: No virtual environment found at %s or %s"
+                     venv-path fallback-path))))
+      (message "Warning: Not in a project."))))
+
+(use-package eglot
+  :ensure nil
+  :config
+  ;; Prefer the language servers installed by scripts/phase-04-toolchains.sh
+  (when (executable-find "basedpyright-langserver")
+    (add-to-list 'eglot-server-programs
+                 '((python-mode python-ts-mode) "basedpyright-langserver" "--stdio")))
+  (when (executable-find "vtsls")
+    (add-to-list 'eglot-server-programs
+                 '((typescript-mode typescript-ts-mode tsx-ts-mode js-mode js-ts-mode)
+                   "vtsls" "--stdio")))
+  (when (executable-find "lexical")
+    (add-to-list 'eglot-server-programs
+                 '((elixir-mode elixir-ts-mode) "lexical" "server")))
+  (when (executable-find "gopls")
+    (add-to-list 'eglot-server-programs
+                 '((go-mode go-ts-mode) "gopls")))
+  (setq eglot-connect-timeout 120
+        eglot-autoshutdown t)
+  (setq-default
+   eglot-workspace-configuration
+   '((gopls . ((analyses . ((nilness . t)
+                            (unusedparams . t)
+                            (unusedwrite . t)
+                            (fieldalignment . t)))
+               (staticcheck . t)
+               (gofumpt . t)
+               (usePlaceholders . t)
+               (completeUnimported . t)
+               (semanticTokens . t))))))
+
 (use-package haskell-mode)
 (use-package lua-mode)
 (use-package php-mode)
-(use-package elixir-mode
-  :config
-  (add-hook 'elixir-mode-hook 'eglot-ensure)
-  (add-hook 'elixir-mode-hook (lambda () (setq eglot-connect-timeout 120)))
-  (add-hook 'elixir-mode-hook (lambda () (setq eglot-autoshutdown t)))
-)
+(use-package elixir-mode)
 (use-package yasnippet)
 (use-package yasnippet-snippets
-  :init (yas-reload-all)
-)
-(use-package python
-  :config
-  (add-hook 'python-mode-hook 'activate-virtual-env-by-project)
-  (add-hook 'python-mode-hook 'company-mode)
-  (add-hook 'python-mode-hook 'yas-minor-mode)
-  (add-hook 'python-mode-hook 'eglot-ensure)
-  (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
-  (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
-)
+  :init (yas-reload-all))
+(use-package python)
+
+(dolist (hook '(python-mode-hook python-ts-mode-hook))
+  (add-hook hook 'activate-virtual-env-by-project)
+  (add-hook hook 'yas-minor-mode)
+  (add-hook hook 'eglot-ensure))
+
+(dolist (hook '(elixir-mode-hook elixir-ts-mode-hook
+                typescript-mode-hook typescript-ts-mode-hook tsx-ts-mode-hook
+                js-mode-hook js-ts-mode-hook
+                go-mode-hook go-ts-mode-hook))
+  (add-hook hook 'eglot-ensure))
 
 ;; (global-set-key [escape] 'keyboard-escape-quit)
 
@@ -487,43 +624,229 @@
         doom-modeline-persp-name t   ;; adds perspective name to modeline
         doom-modeline-persp-icon t)) ;; adds folder icon next to persp name
 
-(use-package neotree
+(use-package dirvish
+  :init
+  (dirvish-override-dired-mode)
+  :bind
+  (("C-c f" . dirvish-fd)
+   :map dirvish-mode-map
+   ("a" . dirvish-quick-access)
+   ("f" . dirvish-file-info-menu))
   :config
-  (setq neo-smart-open t
-        neo-show-hidden-files t
-        neo-window-width 55
-        neo-window-fixed-size nil
-        inhibit-compacting-font-caches t
-        projectile-switch-project-action 'neotree-projectile-action) 
-        ;; truncate long file names in neotree
-        (add-hook 'neo-after-create-hook
-           #'(lambda (_)
-               (with-current-buffer (get-buffer neo-buffer-name)
-                 (setq truncate-lines t)
-                 (setq word-wrap nil)
-                 (make-local-variable 'auto-hscroll-mode)
-                 (setq auto-hscroll-mode nil)))))
+  (setq dirvish-mode-line-format
+        '(:left (sort symlink) :right (omit yank index)))
+  (setq dirvish-attributes
+        '(nerd-icons file-time file-size collapse subtree-state vc-state git-msg)))
+
+(defun aic/org-font-setup ()
+  ;; Replace list hyphen with dot.
+  (font-lock-add-keywords 'org-mode
+                          '(("^ *\\([-]\\) "
+                             (0 (prog1 () (compose-region (match-beginning 1)
+                                                          (match-end 1)
+                                                          "•"))))))
+
+  ;; Set faces for heading levels using the variable-pitch font.
+  (dolist (face '((org-level-1 . 1.2)
+                  (org-level-2 . 1.1)
+                  (org-level-3 . 1.05)
+                  (org-level-4 . 1.0)
+                  (org-level-5 . 1.1)
+                  (org-level-6 . 1.1)
+                  (org-level-7 . 1.1)
+                  (org-level-8 . 1.1)))
+    (set-face-attribute (car face) nil
+                        :inherit 'variable-pitch
+                        :weight 'regular
+                        :height (cdr face)))
+
+  ;; Ensure that anything that should be fixed-pitch in Org files appears that way.
+  (set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+  (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-table nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+  (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+  (set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
+
+(defun aic/org-mode-setup ()
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1))
+
+(use-package org
+  :hook (org-mode . aic/org-mode-setup)
+  :config
+  (setq org-ellipsis " ▾")
+
+  (setq org-agenda-start-with-log-mode t)
+  (setq org-log-done 'time)
+  (setq org-log-into-drawer t)
+
+  (setq org-directory (expand-file-name "OrgFiles" user-emacs-directory))
+  (setq org-agenda-files
+        (list (expand-file-name "Tasks.org" org-directory)
+              (expand-file-name "Habits.org" org-directory)
+              (expand-file-name "Birthdays.org" org-directory)))
+
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+  (setq org-habit-graph-column 60)
+
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
+          (sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)"
+                    "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+
+  (setq org-refile-targets
+        `((,(expand-file-name "Archive.org" org-directory) :maxlevel . 1)
+          (,(expand-file-name "Tasks.org" org-directory) :maxlevel . 1)))
+
+  ;; Save Org buffers after refiling.
+  (advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+  (setq org-tag-alist
+        '((:startgroup)
+          ;; Put mutually exclusive tags here.
+          (:endgroup)
+          ("@errand" . ?E)
+          ("@home" . ?H)
+          ("@work" . ?W)
+          ("agenda" . ?a)
+          ("planning" . ?p)
+          ("publish" . ?P)
+          ("batch" . ?b)
+          ("note" . ?n)
+          ("idea" . ?i)))
+
+  ;; Configure custom agenda views.
+  (setq org-agenda-custom-commands
+        '(("d" "Dashboard"
+           ((agenda "" ((org-deadline-warning-days 7)))
+            (todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))
+            (tags-todo "agenda/ACTIVE"
+                       ((org-agenda-overriding-header "Active Projects")))))
+
+          ("n" "Next Tasks"
+           ((todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))))
+
+          ("W" "Work Tasks" tags-todo "+work-email")
+
+          ;; Low-effort next actions.
+          ("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+           ((org-agenda-overriding-header "Low Effort Tasks")
+            (org-agenda-max-todos 20)
+            (org-agenda-files org-agenda-files)))
+
+          ("w" "Workflow Status"
+           ((todo "WAIT"
+                  ((org-agenda-overriding-header "Waiting on External")
+                   (org-agenda-files org-agenda-files)))
+            (todo "REVIEW"
+                  ((org-agenda-overriding-header "In Review")
+                   (org-agenda-files org-agenda-files)))
+            (todo "PLAN"
+                  ((org-agenda-overriding-header "In Planning")
+                   (org-agenda-todo-list-sublevels nil)
+                   (org-agenda-files org-agenda-files)))
+            (todo "BACKLOG"
+                  ((org-agenda-overriding-header "Project Backlog")
+                   (org-agenda-todo-list-sublevels nil)
+                   (org-agenda-files org-agenda-files)))
+            (todo "READY"
+                  ((org-agenda-overriding-header "Ready for Work")
+                   (org-agenda-files org-agenda-files)))
+            (todo "ACTIVE"
+                  ((org-agenda-overriding-header "Active Projects")
+                   (org-agenda-files org-agenda-files)))
+            (todo "COMPLETED"
+                  ((org-agenda-overriding-header "Completed Projects")
+                   (org-agenda-files org-agenda-files)))
+            (todo "CANC"
+                  ((org-agenda-overriding-header "Cancelled Projects")
+                   (org-agenda-files org-agenda-files)))))))
+
+  (setq org-capture-templates
+        `(("t" "Tasks / Projects")
+          ("tt" "Task" entry (file+olp ,(expand-file-name "Tasks.org" org-directory) "Inbox")
+           "* TODO %?\n  %U\n  %a\n  %i" :empty-lines 1)
+
+          ("j" "Journal Entries")
+          ("jj" "Journal" entry
+           (file+olp+datetree ,(expand-file-name "Journal.org" org-directory))
+           "\n* %<%I:%M %p> - Journal :journal:\n\n%?\n\n"
+           :clock-in :clock-resume :empty-lines 1)
+          ("jm" "Meeting" entry
+           (file+olp+datetree ,(expand-file-name "Journal.org" org-directory))
+           "* %<%I:%M %p> - %a :meetings:\n\n%?\n\n"
+           :clock-in :clock-resume :empty-lines 1)
+
+          ("w" "Workflows")
+          ("we" "Checking Email" entry
+           (file+olp+datetree ,(expand-file-name "Journal.org" org-directory))
+           "* Checking Email :email:\n\n%?" :clock-in :clock-resume :empty-lines 1)
+
+          ("m" "Metrics Capture")
+          ("mw" "Weight" table-line
+           (file+headline ,(expand-file-name "Metrics.org" org-directory) "Weight")
+           "| %U | %^{Weight} | %^{Notes} |" :kill-buffer t)))
+
+  (define-key global-map (kbd "C-c j")
+    (lambda () (interactive) (org-capture nil "jj")))
+
+  (aic/org-font-setup))
 
 (use-package toc-org
-    :commands toc-org-enable
-    :init (add-hook 'org-mode-hook 'toc-org-enable))
+  :commands toc-org-enable
+  :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(add-hook 'org-mode-hook 'org-indent-mode)
-(use-package org-bullets)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+(use-package org-bullets
+  :after org
+  :hook (org-mode . org-bullets-mode)
+  :custom
+  (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
+
+(defun aic/org-mode-visual-fill ()
+  (setq visual-fill-column-width 100
+        visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . aic/org-mode-visual-fill))
 
 (eval-after-load 'org-indent '(diminish 'org-indent-mode))
 
-(custom-set-faces
- '(org-level-1 ((t (:inherit outline-1 :height 1.7))))
- '(org-level-2 ((t (:inherit outline-2 :height 1.6))))
- '(org-level-3 ((t (:inherit outline-3 :height 1.5))))
- '(org-level-4 ((t (:inherit outline-4 :height 1.4))))
- '(org-level-5 ((t (:inherit outline-5 :height 1.3))))
- '(org-level-6 ((t (:inherit outline-5 :height 1.2))))
- '(org-level-7 ((t (:inherit outline-5 :height 1.1)))))
-
 (require 'org-tempo)
+(add-to-list 'org-structure-template-alist '("sh" . "src shell"))
+(add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+(add-to-list 'org-structure-template-alist '("py" . "src python"))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)))
+
+;; Automatically tangle config.org on save.
+(defun aic/org-babel-tangle-config()
+  (when (string-equal (buffer-file-name)
+                      (expand-file-name "config.org" user-emacs-directory))
+    ;; Dynamic scoping to the rescue.
+    (let ((org-confirm-babel-evaluate nil))
+      (org-babel-tangle))))
+(add-hook 'org-mode-hook
+          (lambda () (add-hook 'after-save-hook #'aic/org-babel-tangle-config)))
+
+(use-package org-roam
+  :init
+  (setq org-roam-v2-ack t)
+  :custom
+  (org-roam-completion-everywhere t)
+  (org-roam-directory (expand-file-name "OrgFiles/RoamNotes" user-emacs-directory))
+  :bind (("C-c n l" . org-roam-buffer-toggle)
+         ("C-c n f" . org-roam-node-find)
+         ("C-c n i" . org-roam-node-insert)
+         :map org-mode-map
+         ("C-M-i" . completion-at-point)))
 
 (use-package perspective
   :custom
@@ -535,7 +858,7 @@
   (persp-mode)
   :config
   ;; Sets a file to write to when we save states
-  (setq persp-state-default-file "~/.config/emacs/sessions"))
+  (setq persp-state-default-file (expand-file-name "sessions" user-emacs-directory)))
 
 ;; This will group buffers by persp-name in ibuffer.
 (add-hook 'ibuffer-hook
@@ -547,10 +870,9 @@
 ;; Automatically save perspective states to file when Emacs exits.
 (add-hook 'kill-emacs-hook #'persp-state-save)
 
-(use-package projectile
-  :config
-  (projectile-mode 1))
-(use-package ag)
+(use-package project
+  :ensure nil
+  :bind-keymap ("C-c p" . project-prefix-map))
 
 (use-package rainbow-delimiters
   :hook ((emacs-lisp-mode . rainbow-delimiters-mode)
@@ -560,6 +882,7 @@
   :diminish
   :hook org-mode prog-mode)
 
+(setq inhibit-startup-message t)
 (delete-selection-mode 1)    ;; You can select text and delete it by typing.
 (electric-indent-mode -1)    ;; Turn off the weird indenting that Emacs does by default.
 (electric-pair-mode 1)       ;; Turns on automatic parens pairing
@@ -570,17 +893,24 @@
                    `(lambda (c)
                   (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
 (global-auto-revert-mode t)  ;; Automatically show changes if the file has changed
+(setq global-auto-revert-non-file-buffers t)
 (global-display-line-numbers-mode 1) ;; Display line numbers
 (global-visual-line-mode t)  ;; Enable truncated lines
-(menu-bar-mode -1)           ;; Disable the menu bar 
-(scroll-bar-mode -1)         ;; Disable the scroll bar
-(tool-bar-mode -1)           ;; Disable the tool bar
+(setq visible-bell t)        ;; Use a visible bell
+(setq mouse-wheel-scroll-amount '(1 ((shift) . 1))) ;; One line at a time
+(setq mouse-wheel-progressive-speed nil) ;; Don't accelerate scrolling
+(setq mouse-wheel-follow-mouse t) ;; Scroll window under mouse
+(setq scroll-step 1) ;; Keyboard scroll one line at a time
+(setq use-dialog-box nil) ;; Disable dialog boxes
+(setq large-file-warning-threshold nil) ;; Don't warn for large files
+(setq vc-follow-symlinks t) ;; Don't ask for confirmation when following symlinks
 (setq org-edit-src-content-indentation 0) ;; Set src block automatic indent to 0 instead of 2.
+
+(setq-default frame-title-format '("%f [" mode-name "]"))
 
 (use-package eshell-toggle
   :custom
   (eshell-toggle-size-fraction 3)
-  (eshell-toggle-use-projectile-root t)
   (eshell-toggle-run-command nil)
   (eshell-toggle-init-function #'eshell-toggle-init-ansi-term))
 
@@ -600,38 +930,16 @@
         eshell-hist-ignoredups t
         eshell-scroll-to-bottom-on-input t
         eshell-destroy-buffer-when-process-dies t
-        eshell-visual-commands'("bash" "fish" "htop" "ssh" "top" "zsh"))
+        eshell-visual-commands '("bash" "fish" "htop" "ssh" "top" "zsh"))
 
-(use-package vterm
-:config
-(setq shell-file-name "/bin/sh"
-      vterm-max-scrollback 5000))
-
-(use-package vterm-toggle
-  :after vterm
+(use-package eat
   :config
-  ;; When running programs in Vterm and in 'normal' mode, make sure that ESC
-  ;; kills the program as it would in most standard terminal programs.
-  ;; (define-key 'normal vterm-mode-map (kbd "<escape>") 'vterm--self-insert)
-  (setq vterm-toggle-fullscreen-p nil)
-  (setq vterm-toggle-scope 'project)
-  (add-to-list 'display-buffer-alist
-               '((lambda (buffer-or-name _)
-                     (let ((buffer (get-buffer buffer-or-name)))
-                       (with-current-buffer buffer
-                         (or (equal major-mode 'vterm-mode)
-                             (string-prefix-p vterm-buffer-name (buffer-name buffer))))))
-                  (display-buffer-reuse-window display-buffer-at-bottom)
-                  ;;(display-buffer-reuse-window display-buffer-in-direction)
-                  ;;display-buffer-in-direction/direction/dedicated is added in emacs27
-                  ;;(direction . bottom)
-                  ;;(dedicated . t) ;dedicated is supported in emacs27
-                  (reusable-frames . visible)
-                  (window-height . 0.4))))
+  (setq shell-file-name "/bin/sh"
+        eat-term-name "xterm-256color"))
 
 (use-package sudo-edit)
 
-(add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
+(add-to-list 'custom-theme-load-path (expand-file-name "themes" user-emacs-directory))
 
 (use-package doom-themes
   :config
@@ -639,14 +947,10 @@
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
   ;; Sets the default theme to load!!! 
   (load-theme 'doom-one t)
-  ;; Enable custom neotree theme (all-the-icons must be installed!)
-  (doom-themes-neotree-config)
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
 
 (use-package tldr)
-
-(add-to-list 'default-frame-alist '(alpha-background . 100)) ; For all new frames henceforth
 
 (use-package which-key
   :init
@@ -667,8 +971,12 @@
 	  which-key-allow-imprecise-window-fit nil
 	  which-key-separator " → " ))
 
-(use-package undo-tree
-  :init
-    (global-undo-tree-mode)
-)
-(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
+(use-package helpful
+  :bind
+  ([remap describe-function] . helpful-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . helpful-variable)
+  ([remap describe-key] . helpful-key)
+  ([remap describe-symbol] . helpful-symbol))
+
+(use-package vundo)

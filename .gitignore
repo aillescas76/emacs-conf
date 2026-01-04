@@ -9,3 +9,36 @@
 
 # Undo-tree save-files
 *.~undo-tree
+
+# Emacs auto-save and lock files
+\#*\#
+.\#*
+
+# Emacs runtime directories
+/auto-save-list/
+/elpa/
+/eln-cache/
+/eshell/
+/server/
+/transient/
+/tree-sitter/
+/url/
+/var/
+
+# Source builds
+/sources/
+
+# Emacs runtime files
+/abbrev_defs
+/bookmarks
+/custom.el
+/history
+/network-security.data
+/org-id-locations
+/org-roam.db
+/package-quickstart.el
+/projects
+/recentf
+/savehist
+/tramp
+/sessions
