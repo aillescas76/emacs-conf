@@ -3,16 +3,19 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: cleanup-emacs-tree-sitter.sh [--apply] [--prefix PATH] [--only emacs|tree-sitter]
+Usage: cleanup-emacs-tree-sitter.sh [--apply] [--prefix PATH] [--only emacs|tree-sitter] [--packages] [--package-dir PATH]
 
 Removes Emacs and tree-sitter artifacts under a system prefix (default: /usr/local).
 By default it prints what would be removed. Use --apply to delete.
+With --packages, also removes ELPA and native compilation caches.
 EOF
 }
 
 prefix="/usr/local"
 apply=0
 only=""
+packages=0
+package_dirs=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -34,6 +37,18 @@ while [ $# -gt 0 ]; do
         echo "Invalid value for --only: $only" >&2
         exit 1
       fi
+      ;;
+    --packages)
+      packages=1
+      ;;
+    --package-dir)
+      shift
+      if [ -z "${1:-}" ]; then
+        echo "Missing value for --package-dir." >&2
+        exit 1
+      fi
+      package_dirs+=("$1")
+      packages=1
       ;;
     -h|--help)
       usage
@@ -112,6 +127,24 @@ if should_include "emacs"; then
   fi
 fi
 
+if [ "$packages" -eq 1 ]; then
+  xdg_config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+  xdg_cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
+  default_package_dirs=(
+    "$xdg_config_home/emacs/elpa"
+    "$xdg_config_home/emacs/eln-cache"
+    "$xdg_cache_home/emacs/eln-cache"
+    "$HOME/.emacs.d/elpa"
+    "$HOME/.emacs.d/eln-cache"
+  )
+  for dir in "${default_package_dirs[@]}"; do
+    add_if_exists "$dir"
+  done
+  for dir in "${package_dirs[@]}"; do
+    add_if_exists "$dir"
+  done
+fi
+
 if [ "${#targets[@]}" -eq 0 ]; then
   echo "No matching artifacts found under $prefix."
   exit 0
@@ -125,18 +158,18 @@ if [ "$apply" -eq 0 ]; then
   exit 0
 fi
 
-run_cmd=()
-if [ ! -w "$prefix" ]; then
+for target in "${targets[@]}"; do
+  target_parent="$(dirname "$target")"
+  if [ -w "$target_parent" ]; then
+    rm -rf "$target"
+    continue
+  fi
   if command -v sudo >/dev/null 2>&1; then
-    run_cmd=(sudo)
+    sudo rm -rf "$target"
   else
-    echo "Need write access to $prefix or sudo." >&2
+    echo "Need write access to remove $target or sudo." >&2
     exit 1
   fi
-fi
-
-for target in "${targets[@]}"; do
-  "${run_cmd[@]}" rm -rf "$target"
 done
 
 echo "Removal complete."

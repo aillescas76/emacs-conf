@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 xdg_config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 xdg_target="${xdg_config_home}/emacs"
 legacy_target="$HOME/.emacs.d"
+install_fonts=true
 
 if [ -e "$xdg_target" ] || [ -L "$xdg_target" ]; then
   target="$xdg_target"
@@ -44,6 +45,55 @@ warn_langserver() {
   fi
 }
 
+ensure_emacs_on_path() {
+  if have_cmd emacs; then
+    return
+  fi
+
+  local candidate
+  local emacs_bin=""
+  local candidates=(
+    "/usr/local/bin/emacs"
+    "/usr/bin/emacs"
+    "/opt/homebrew/bin/emacs"
+    "/opt/homebrew/opt/emacs/bin/emacs"
+    "/snap/bin/emacs"
+    "$HOME/.local/bin/emacs"
+    "/Applications/Emacs.app/Contents/MacOS/Emacs"
+  )
+
+  for candidate in "${candidates[@]}"; do
+    if [ -x "$candidate" ]; then
+      emacs_bin="$candidate"
+      break
+    fi
+  done
+
+  if [ -z "$emacs_bin" ]; then
+    return
+  fi
+
+  local emacs_dir
+  emacs_dir="$(dirname "$emacs_bin")"
+  case ":$PATH:" in
+    *":$emacs_dir:"*) ;;
+    *)
+      PATH="${emacs_dir}:$PATH"
+      export PATH
+      ;;
+  esac
+
+  local bashrc="${HOME}/.bashrc"
+  local export_line="export PATH=\"${emacs_dir}:\$PATH\""
+  if [ -f "$bashrc" ]; then
+    if ! grep -Fq "$emacs_dir" "$bashrc"; then
+      printf '\n# Added by emacs-conf installer to find emacs\n%s\n' "$export_line" >>"$bashrc"
+    fi
+  else
+    printf '%s\n' "$export_line" >"$bashrc"
+  fi
+}
+
 check_emacs_version() {
   local major
   major="$(emacs --batch --eval "(princ emacs-major-version)" 2>/dev/null || true)"
@@ -58,6 +108,7 @@ check_emacs_version() {
 }
 
 check_dependencies() {
+  ensure_emacs_on_path
   require_cmd emacs
   check_emacs_version
   warn_cmd git
@@ -75,6 +126,9 @@ check_dependencies() {
   warn_langserver vtsls "npm install -g @vtsls/language-server"
   warn_langserver lexical "mix archive.install hex lexical"
   warn_langserver gopls "go install golang.org/x/tools/gopls@latest"
+  if [ "$install_fonts" = "true" ]; then
+    maybe_install_nerd_fonts
+  fi
   check_fonts
 }
 
@@ -95,7 +149,7 @@ check_fonts() {
   local mono_fonts="Fira Code Retina|Fira Code|JetBrains Mono|DejaVu Sans Mono|Monospace"
   local var_fonts="Ubuntu|Cantarell|Noto Sans|Sans"
 
-  if ! fc-list | "${matcher_cmd[@]}" "$mono_fonts"; then
+  if ! "${matcher_cmd[@]}" "$mono_fonts" < <(fc-list); then
     echo "Warning: no preferred monospace font found." >&2
     echo "Hint: install one of: Fira Code, JetBrains Mono, or DejaVu Sans Mono." >&2
     echo "  Debian/Ubuntu: sudo apt install fonts-firacode fonts-jetbrains-mono fonts-dejavu-core" >&2
@@ -103,12 +157,49 @@ check_fonts() {
     echo "  Arch: sudo pacman -S ttf-fira-code ttf-jetbrains-mono ttf-dejavu" >&2
   fi
 
-  if ! fc-list | "${matcher_cmd[@]}" "$var_fonts"; then
+  if ! "${matcher_cmd[@]}" "$var_fonts" < <(fc-list); then
     echo "Warning: no preferred variable-pitch font found." >&2
     echo "Hint: install one of: Ubuntu, Cantarell, or Noto Sans." >&2
     echo "  Debian/Ubuntu: sudo apt install fonts-ubuntu fonts-cantarell fonts-noto-core" >&2
     echo "  Fedora: sudo dnf install ubuntu-fonts cantarell-fonts google-noto-sans-fonts" >&2
     echo "  Arch: sudo pacman -S ttf-ubuntu-font-family cantarell-fonts noto-fonts" >&2
+  fi
+}
+
+nerd_fonts_installed() {
+  if ! have_cmd fc-list; then
+    return 1
+  fi
+
+  local matcher_cmd
+  if have_cmd rg; then
+    matcher_cmd=(rg -q -i)
+  else
+    matcher_cmd=(grep -qiE)
+  fi
+
+  local nerd_fonts="Symbols Nerd Font|Symbols Nerd Font Mono|Nerd Font"
+  "${matcher_cmd[@]}" "$nerd_fonts" < <(fc-list)
+}
+
+maybe_install_nerd_fonts() {
+  if nerd_fonts_installed; then
+    return
+  fi
+
+  echo "Installing Nerd Fonts for nerd-icons..."
+  if ! emacs --batch --eval "(progn (require 'package)
+    (add-to-list 'package-archives '(\"gnu\" . \"https://elpa.gnu.org/packages/\") t)
+    (add-to-list 'package-archives '(\"nongnu\" . \"https://elpa.nongnu.org/nongnu/\") t)
+    (add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\") t)
+    (package-initialize)
+    (unless (package-installed-p 'nerd-icons)
+      (package-refresh-contents)
+      (package-install 'nerd-icons))
+    (require 'nerd-icons)
+    (nerd-icons-install-fonts t))"; then
+    echo "Warning: unable to install Nerd Fonts automatically." >&2
+    echo "Hint: run M-x nerd-icons-install-fonts inside Emacs." >&2
   fi
 }
 
@@ -150,6 +241,7 @@ case "${1-}" in
     exit 0
     ;;
   -c|--check-deps)
+    install_fonts=false
     check_dependencies
     echo "Dependency check complete."
     exit 0

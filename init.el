@@ -12,16 +12,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(cape corfu dashboard diminish dired-open dirvish doom-modeline
-	  doom-themes eat elfeed-goodies elixir-mode embark-consult
-	  eshell-syntax-highlighting eshell-toggle general
-	  git-timemachine haskell-mode helpful hl-todo lua-mode magit
-	  marginalia nerd-icons-completion nerd-icons-corfu
-	  nerd-icons-dired orderless org-bullets org-roam peep-dired
-	  perspective php-mode pyvenv rainbow-delimiters rainbow-mode
-	  sudo-edit tldr toc-org treesit-auto unicode-fonts vertico
-	  visual-fill-column vundo yasnippet-snippets)))
+ '(package-selected-packages nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

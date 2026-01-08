@@ -740,9 +740,25 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
            ((file-exists-p fallback-path)
             (pyvenv-activate fallback-path))
            (t
-            (message "Warning: No virtual environment found at %s or %s"
+           (message "Warning: No virtual environment found at %s or %s"
                      venv-path fallback-path))))
       (message "Warning: Not in a project."))))
+
+(defun configure-eglot-python-venv()
+  "Configure Eglot to use the active Python virtualenv."
+  (when (and (boundp 'pyvenv-virtual-env) pyvenv-virtual-env)
+    (let* ((venv-dir (directory-file-name pyvenv-virtual-env))
+           (venv-path (file-name-directory venv-dir))
+           (venv-name (file-name-nondirectory venv-dir))
+           (python-config `((python . ((venvPath . ,venv-path)
+                                       (venv . ,venv-name))))))
+      (setq-local eglot-workspace-configuration
+                  (append
+                   `((basedpyright . ,python-config)
+                     (pyright . ,python-config))
+                   (assq-delete-all
+                    'pyright
+                    (assq-delete-all 'basedpyright eglot-workspace-configuration)))))))
 
 (use-package eglot
   :ensure nil
@@ -785,9 +801,10 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
 (use-package python)
 
 (dolist (hook '(python-mode-hook python-ts-mode-hook))
-  (add-hook hook 'activate-virtual-env-by-project)
-  (add-hook hook 'yas-minor-mode)
-  (add-hook hook 'eglot-ensure))
+  (add-hook hook 'activate-virtual-env-by-project t)
+  (add-hook hook 'configure-eglot-python-venv t)
+  (add-hook hook 'yas-minor-mode t)
+  (add-hook hook 'eglot-ensure t))
 
 (dolist (hook '(elixir-mode-hook elixir-ts-mode-hook
                 typescript-mode-hook typescript-ts-mode-hook tsx-ts-mode-hook
