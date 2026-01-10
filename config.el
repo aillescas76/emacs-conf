@@ -219,6 +219,14 @@
     (setf (cdr (nth block-idx unicode-fonts-block-font-mapping))
           `(,updated-block))))
 
+(defvar aic/unicode-fonts-setup-delay 2
+  "Seconds to wait before running unicode-fonts setup.")
+
+(defun aic/queue-unicode-fonts-setup ()
+  "Defer unicode fonts setup to reduce startup time."
+  (when (display-multi-font-p)
+    (run-with-idle-timer aic/unicode-fonts-setup-delay nil #'unicode-fonts-setup)))
+
 (use-package unicode-fonts
   :custom
   (unicode-fonts-skip-font-groups '(low-quality-glyphs))
@@ -231,7 +239,7 @@
      "Emoticons"
      "Miscellaneous Symbols and Pictographs"
      "Transport and Map Symbols"))
-  (unicode-fonts-setup))
+  (aic/queue-unicode-fonts-setup))
 
 (use-package general
   :config
@@ -962,8 +970,9 @@
   :config
   (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  ;; Sets the default theme to load!!! 
-  (load-theme 'doom-one t)
+  ;; Sets the default theme to load if the user has not changed it.
+  (unless custom-enabled-themes
+    (load-theme 'doom-solarized-dark t))
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
 
