@@ -1,6 +1,25 @@
 (add-to-list 'load-path "~/.config/emacs/scripts/")
 
-(require 'elpaca-setup)  ;; The Elpaca Package Manager
+;(require 'elpaca-setup)  ;; The Elpaca Package Manage
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(eval-when-compile
+  (require 'use-package))
+(setq use-package-always-ensure t)
+
+(load "~/.config/emacs/scripts/elpaca-setup.el")
+; (package-refresh-contents)
 
 (use-package all-the-icons
   :ensure t
@@ -453,7 +472,6 @@
 (use-package haskell-mode)
 (use-package lua-mode)
 (use-package php-mode)
-;; (add-to-list 'eglot-server-programs '(elixir-mode "~/.emacs.d/elixir-ls/release/language_server.sh"))
 (use-package elixir-mode
   :config
   (add-hook 'elixir-mode-hook 'eglot-ensure)
@@ -472,6 +490,11 @@
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
   (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
+)
+
+(use-package markdown-mode
+  :ensure t
+  :init (setq markdown-command "multimarkdown")
 )
 
 ;; (global-set-key [escape] 'keyboard-escape-quit)
@@ -641,6 +664,7 @@
   (doom-themes-neotree-config)
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
+;;(nerd-icons-install-fonts)
 
 (use-package tldr)
 

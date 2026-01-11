@@ -63,7 +63,26 @@ To keep this =config.org= a reasonable length, I have moved a lot of code to ind
 
 ** Sourcing the scripts
 #+begin_src emacs-lisp
-(require 'elpaca-setup)  ;; The Elpaca Package Manager
+;(require 'elpaca-setup)  ;; The Elpaca Package Manage
+(require 'package)
+
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+(unless package-archive-contents
+  (package-refresh-contents))
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+(eval-when-compile
+  (require 'use-package))
+(setq use-package-always-ensure t)
+
+(load "~/.config/emacs/scripts/elpaca-setup.el")
+; (package-refresh-contents)
 #+end_src
 
 * ALL THE ICONS
@@ -253,7 +272,7 @@ Install =luacheck= from your Linux distro's repositories for flycheck to work co
 #+end_src
 
 * FONTS
-Defining the various fonts that Emacs will use.
+Defining the various fonts that Emacs will use. Install using "sudo apt install fonts-firacode"
 
 ** Setting the Font Face
 #+begin_src emacs-lisp
@@ -588,6 +607,8 @@ Adding highlights to TODO and related words.
 * LANGUAGE SUPPORT
 Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM, AWK, C, C++, Fortran, Icon, IDL (CORBA), IDLWAVE, Java, Javascript, M4, Makefiles, Metafont, Modula2, Object Pascal, Objective-C, Octave, Pascal, Perl, Pike, PostScript, Prolog, Python, Ruby, Simula, SQL, Tcl, Verilog, and VHDL.  Other languages will require you to install additional modes.
 
+
+For eglot to work install "sudo apt install python3-pylsp"
 #+begin_src emacs-lisp
 (use-package pyvenv)
 (defun activate-virtual-env-by-project()
@@ -633,6 +654,11 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
   (add-hook 'python-mode-hook 'eglot-ensure)
   (add-hook 'python-mode-hook (lambda () (setq eglot-connect-timeout 120)))
   (add-hook 'python-mode-hook (lambda () (setq eglot-autoshutdown t)))
+)
+
+(use-package markdown-mode
+  :ensure t
+  :init (setq markdown-command "multimarkdown")
 )
 #+end_src
 
@@ -902,7 +928,7 @@ Vterm is a terminal emulator within Emacs.  The 'shell-file-name' setting sets t
 #+end_src
 
 * THEME
-The first line below designates the directory where will place all of our custom-made themes, which I have created only one (dtmacs).  You can create your own Emacs themes with the help of the [[https://emacsfodder.github.io/emacs-theme-editor/][Emacs Theme Editor]].  I am also installing =doom-themes= because it contains a huge collection of themes.  M-x load-theme will list all of the themes available.
+The first line below designates the directory where will place all of our custom-made themes, which I have created only one (dtmacs).  You can create your own Emacs themes with the help of the [[https://emacsfodder.github.io/emacs-theme-editor/][Emacs Theme Editor]].  I am also installing =doom-themes= because it contains a huge collection of themes.  M-x load-theme will list all of the themes available. For the icons to work M-x nerd-icons-install-fonts should be executed.
 
 #+begin_src emacs-lisp
 (add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
@@ -917,6 +943,7 @@ The first line below designates the directory where will place all of our custom
   (doom-themes-neotree-config)
   ;; Corrects (and improves) org-mode's native fontification.
   (doom-themes-org-config))
+;;(nerd-icons-install-fonts)
 #+end_src
 
 * TLDR
