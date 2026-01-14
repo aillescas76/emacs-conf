@@ -160,7 +160,6 @@ Emacs Dashboard is an extensible startup screen showing you recent files, bookma
 #+begin_src emacs-lisp
 (use-package dashboard
   :init
-  (setq initial-buffer-choice 'dashboard-open)
   (setq dashboard-set-heading-icons t)
   (setq dashboard-set-file-icons t)
   (setq dashboard-icon-type 'nerd-icons)
@@ -177,7 +176,13 @@ Emacs Dashboard is an extensible startup screen showing you recent files, bookma
   (dashboard-modify-heading-icons '((recents . "file-text")
 				      (bookmarks . "book")))
   :config
-  (dashboard-setup-startup-hook))
+  (require 'seq)
+  (defun aic/dashboard-open-when-empty ()
+    "Open the dashboard only when Emacs starts without visiting files."
+    (when (and (not (daemonp))
+               (not (seq-some #'buffer-file-name (buffer-list))))
+      (dashboard-open)))
+  (add-hook 'emacs-startup-hook #'aic/dashboard-open-when-empty))
 
 #+end_src
 
@@ -547,10 +552,11 @@ You can use the bindings CTRL plus =/- for zooming in/out.  You can also use CTR
     "o F" '(select-frame-by-name :wk "Select frame by name")
     "o r" '(dt/emacs-run-launcher :wk "Run app launcher"))
 
-  ;; project-prefix-map already has a ton of bindings 
+  ;; project-prefix-map already has a ton of bindings
   ;; set for us, so no need to specify each individually.
-  (dt/leader-keys
-    "p" '(project-prefix-map :wk "Project"))
+  (with-eval-after-load 'project
+    (dt/leader-keys
+      "p" '(:keymap project-prefix-map :wk "Project")))
 
   (dt/leader-keys
     "r" '(replace-string :wk "Replace string"))
@@ -807,6 +813,60 @@ Emacs has built-in programming language modes for Lisp, Scheme, DSSSL, Ada, ASM,
 (use-package yasnippet-snippets
   :init (yas-reload-all))
 (use-package python)
+(use-package markdown-mode
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode))
+  :init
+  ;; Use Pandoc for robust conversion (supports MathJax, etc.).
+  (setq markdown-command
+        (concat "pandoc"
+                " --standalone"
+                " --mathjax"
+                " --highlight-style=pygments"))
+  :config
+  (setq markdown-header-scaling t)
+  (setq markdown-hide-urls t))
+
+(use-package markdown-preview-mode
+  :commands (markdown-preview-mode markdown-preview-toggle)
+  :bind (:map markdown-mode-command-map
+              ("x" . markdown-preview-mode)))
+
+(use-package markdown-dnd-images
+  :ensure nil
+  :if (locate-library "markdown-dnd-images")
+  :after markdown-mode
+  :config
+  (setq dnd-save-directory "images")
+  (setq dnd-view-inline t)
+  (setq dnd-capture-source nil))
+
+(defun aic/markdown-paste-image ()
+  "Paste an image from the clipboard into ./images and insert link."
+  (interactive)
+  (let* ((img-dir "images")
+         (img-name (format-time-string "img_%Y%m%d_%H%M%S.png"))
+         (rel-path (concat "./" img-dir "/" img-name))
+         (abs-path (expand-file-name rel-path)))
+    (unless (file-exists-p img-dir)
+      (make-directory img-dir))
+    (let ((cmd
+           (cond
+            ((eq system-type 'darwin)
+             (format "pngpaste %s" (shell-quote-argument abs-path)))
+            ((eq system-type 'gnu/linux)
+             (format "xclip -selection clipboard -t image/png -o > %s"
+                     (shell-quote-argument abs-path)))
+            ((eq system-type 'windows-nt)
+             (format "powershell -command \"(Get-Clipboard -Format image).Save('%s')\""
+                     abs-path))))))
+      (when (and cmd (zerop (shell-command cmd)))
+        (insert (format "![image](%s)" rel-path))
+        (when (fboundp 'markdown-toggle-inline-images)
+          (markdown-toggle-inline-images)))))
+
+(with-eval-after-load 'markdown-mode
+  (define-key markdown-mode-map (kbd "C-c C-v") #'aic/markdown-paste-image))
 
 (dolist (hook '(python-mode-hook python-ts-mode-hook))
   (add-hook hook 'activate-virtual-env-by-project t)
