@@ -246,6 +246,17 @@
      "Transport and Map Symbols"))
   (aic/queue-unicode-fonts-setup))
 
+(defun aic/copy-buffer-file-path ()
+  "Copy the current buffer's absolute file path to the kill ring.
+Signal a user error if the buffer has no associated file."
+  (interactive)
+  (let ((file-name (buffer-file-name (buffer-base-buffer))))
+    (unless file-name
+      (user-error "Current buffer has no associated file"))
+    (let ((path (expand-file-name file-name)))
+      (kill-new path)
+      (message "Copied file path: %s" path))))
+
 (use-package general
   :config
   ;; (general-evil-setup)
@@ -317,6 +328,7 @@
             :wk "Open emacs init.el")
     "f j" '(consult-find :wk "Jump to a file below current directory")
     "f l" '(consult-locate :wk "Locate a file")
+    "f p" '(aic/copy-buffer-file-path :wk "Copy file path")
     "f r" '(consult-recent-file :wk "Find recent files")
     "f u" '(sudo-edit-find-file :wk "Sudo find file")
     "f U" '(sudo-edit :wk "Sudo edit file"))
